@@ -7,6 +7,7 @@
 "use strict";
 
 const VERSION = "mordorcook-v1";
+const VERSION = "mordorcook-v2-organic";
 const SHELL = VERSION + "-shell";
 const DATA = VERSION + "-data";
 const PHOTOS = VERSION + "-photos";
