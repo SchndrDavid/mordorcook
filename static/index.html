@@ -22,14 +22,6 @@
 :root {
   color-scheme: light;
 
-  --tint:            #B8461E;   /* 5.34:1 on white, 4.79:1 on grouped */
-  --tint-pressed:    #A83A16;
-  --tint-soft:       rgba(184, 70, 30, 0.12);
-  --tint-on:         #FFFFFF;   /* label colour on a filled tint surface */
-  --destructive:     #D70015;   /* 5.38:1 */
-  --success:         #15803D;
-  --warning:         #9A5B00;
-  --warning-on:      #FFFFFF;   /* 5.43:1 */
   --tint:            #FF3B30;   /* Apple System Red */
   --tint-pressed:    #D70015;
   --tint-soft:       rgba(255, 59, 48, 0.12);
@@ -40,16 +32,10 @@
   --warning-on:      #FFFFFF;
 
   --label:           #000000;
-  --label-secondary: rgba(60, 60, 67, 0.75);  /* 5.15:1, darker than stock */
-  --label-tertiary:  rgba(60, 60, 67, 0.55);
-  --label-quaternary:rgba(60, 60, 67, 0.30);
   --label-secondary: rgba(60, 60, 67, 0.60);
   --label-tertiary:  rgba(60, 60, 67, 0.30);
   --label-quaternary:rgba(60, 60, 67, 0.18);
 
-  --bg:              #F2F2F7;   /* grouped background */
-  --bg-card:         #FFFFFF;   /* secondary grouped */
-  --bg-raised:       #FFFFFF;   /* sheets and popovers */
   --bg:              #F2F2F7;
   --bg-card:         #FFFFFF;
   --bg-raised:       #FFFFFF;
@@ -62,11 +48,6 @@
   --separator:       rgba(60, 60, 67, 0.29);
   --separator-solid: #C6C6C8;
 
-  --glass-tint:      rgba(255, 255, 255, 0.72);
-  --glass-solid:     #F7F7FA;
-  --scrim:           rgba(0, 0, 0, 0.35);
-  --shadow-card:     0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.06);
-  --shadow-raised:   0 8px 40px rgba(0,0,0,.18);
   --glass-tint:      rgba(255, 255, 255, 0.75);
   --glass-solid:     #F2F2F7;
   --scrim:           rgba(0, 0, 0, 0.4);
@@ -89,7 +70,6 @@
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
   --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px;
 
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px; --r-full: 999px;
   --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 24px; --r-full: 999px;
 
   --tap: 44px;               /* minimum comfortable control size */
@@ -122,26 +102,16 @@
    explicit choice both win in the right direction. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-appearance="light"]) {
-    --tint:            #FF9F0A;  /* 8.28:1 on raised surfaces */
-    --tint-pressed:    #FFB340;
-    --tint-soft:       rgba(255, 159, 10, 0.18);
-    --tint-on:         #1A1204;
     --tint:            #FF453A;   /* Apple System Red Dark */
     --tint-pressed:    #FF3B30;
     --tint-soft:       rgba(255, 69, 58, 0.20);
     --tint-on:         #FFFFFF;
     --destructive:     #FF453A;
-    --success:         #30D158;
-    --warning:         #FFD60A;
-    --warning-on:      #1A1204;   /* 14.4:1 */
     --success:         #32D74B;   /* Apple System Green Dark */
     --warning:         #FF9F0A;   /* Apple System Orange Dark */
     --warning-on:      #1A1204;
 
     --label:           #FFFFFF;
-    --label-secondary: rgba(235, 235, 245, 0.70);  /* 7.63:1 */
-    --label-tertiary:  rgba(235, 235, 245, 0.45);
-    --label-quaternary:rgba(235, 235, 245, 0.26);
     --label-secondary: rgba(235, 235, 245, 0.60);
     --label-tertiary:  rgba(235, 235, 245, 0.30);
     --label-quaternary:rgba(235, 235, 245, 0.18);
@@ -158,38 +128,24 @@
     --separator:       rgba(84, 84, 88, 0.65);
     --separator-solid: #38383A;
 
-    --glass-tint:      rgba(28, 28, 30, 0.72);
-    --glass-solid:     #161618;
     --glass-tint:      rgba(28, 28, 30, 0.75);
     --glass-solid:     #1C1C1E;
     --scrim:           rgba(0, 0, 0, 0.55);
-    --shadow-card:     0 1px 2px rgba(0,0,0,.4);
-    --shadow-raised:   0 8px 40px rgba(0,0,0,.6);
     --shadow-card:     0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.4);
     --shadow-raised:   0 12px 48px rgba(0,0,0,0.6);
   }
 }
 :root[data-appearance="dark"] {
-  --tint:            #FF9F0A;
-  --tint-pressed:    #FFB340;
-  --tint-soft:       rgba(255, 159, 10, 0.18);
-  --tint-on:         #1A1204;
   --tint:            #FF453A;   /* Apple System Red Dark */
   --tint-pressed:    #FF3B30;
   --tint-soft:       rgba(255, 69, 58, 0.20);
   --tint-on:         #FFFFFF;
   --destructive:     #FF453A;
-  --success:         #30D158;
-  --warning:         #FFD60A;
-  --warning-on:      #1A1204;   /* 14.4:1 */
   --success:         #32D74B;   /* Apple System Green Dark */
   --warning:         #FF9F0A;   /* Apple System Orange Dark */
   --warning-on:      #1A1204;
 
   --label:           #FFFFFF;
-  --label-secondary: rgba(235, 235, 245, 0.70);
-  --label-tertiary:  rgba(235, 235, 245, 0.45);
-  --label-quaternary:rgba(235, 235, 245, 0.26);
   --label-secondary: rgba(235, 235, 245, 0.60);
   --label-tertiary:  rgba(235, 235, 245, 0.30);
   --label-quaternary:rgba(235, 235, 245, 0.18);
@@ -206,13 +162,9 @@
   --separator:       rgba(84, 84, 88, 0.65);
   --separator-solid: #38383A;
 
-  --glass-tint:      rgba(28, 28, 30, 0.72);
-  --glass-solid:     #161618;
   --glass-tint:      rgba(28, 28, 30, 0.75);
   --glass-solid:     #1C1C1E;
   --scrim:           rgba(0, 0, 0, 0.55);
-  --shadow-card:     0 1px 2px rgba(0,0,0,.4);
-  --shadow-raised:   0 8px 40px rgba(0,0,0,.6);
   --shadow-card:     0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.4);
   --shadow-raised:   0 12px 48px rgba(0,0,0,0.6);
 }
