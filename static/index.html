@@ -1,0 +1,3680 @@
+<!doctype html>
+<html lang="en" data-appearance="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cook">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="description" content="A personal recipe book with a hands-free cooking mode.">
+<title>Cook</title>
+<style>
+/* ==========================================================================
+   Design tokens
+   Colour pairs are chosen to clear the contrast minimums for body text
+   (4.5:1 up to 17pt, 3:1 at 18pt or bold) in both appearances.
+   ========================================================================== */
+:root {
+  color-scheme: light;
+
+  --tint:            #B8461E;   /* 5.34:1 on white, 4.79:1 on grouped */
+  --tint-pressed:    #A83A16;
+  --tint-soft:       rgba(184, 70, 30, 0.12);
+  --tint-on:         #FFFFFF;   /* label colour on a filled tint surface */
+  --destructive:     #D70015;   /* 5.38:1 */
+  --success:         #15803D;
+  --warning:         #9A5B00;
+  --warning-on:      #FFFFFF;   /* 5.43:1 */
+
+  --label:           #000000;
+  --label-secondary: rgba(60, 60, 67, 0.75);  /* 5.15:1, darker than stock */
+  --label-tertiary:  rgba(60, 60, 67, 0.55);
+  --label-quaternary:rgba(60, 60, 67, 0.30);
+
+  --bg:              #F2F2F7;   /* grouped background */
+  --bg-card:         #FFFFFF;   /* secondary grouped */
+  --bg-raised:       #FFFFFF;   /* sheets and popovers */
+  --bg-plain:        #FFFFFF;
+
+  --fill-1:          rgba(120, 120, 128, 0.20);
+  --fill-2:          rgba(120, 120, 128, 0.16);
+  --fill-3:          rgba(120, 120, 128, 0.12);
+  --fill-4:          rgba(120, 120, 128, 0.08);
+  --separator:       rgba(60, 60, 67, 0.29);
+  --separator-solid: #C6C6C8;
+
+  --glass-tint:      rgba(255, 255, 255, 0.72);
+  --glass-solid:     #F7F7FA;
+  --scrim:           rgba(0, 0, 0, 0.35);
+  --shadow-card:     0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.06);
+  --shadow-raised:   0 8px 40px rgba(0,0,0,.18);
+
+  /* Type scale mirroring the system text styles, in rem so that the text
+     size preference scales every level at once. */
+  --t-largetitle: 2.125rem;  --lh-largetitle: 2.5rem;
+  --t-title1:     1.75rem;   --lh-title1:     2.125rem;
+  --t-title2:     1.375rem;  --lh-title2:     1.75rem;
+  --t-title3:     1.25rem;   --lh-title3:     1.5625rem;
+  --t-headline:   1.0625rem; --lh-headline:   1.375rem;
+  --t-body:       1.0625rem; --lh-body:       1.4375rem;  /* 17pt default */
+  --t-callout:    1rem;      --lh-callout:    1.3125rem;
+  --t-subhead:    0.9375rem; --lh-subhead:    1.25rem;
+  --t-footnote:   0.8125rem; --lh-footnote:   1.125rem;
+  --t-caption:    0.75rem;   --lh-caption:    1rem;
+
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px;
+
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px; --r-full: 999px;
+
+  --tap: 44px;               /* minimum comfortable control size */
+  --gutter: 16px;
+  --content-max: 40rem;
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 180ms;
+  --dur: 280ms;
+  --dur-slow: 420ms;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --topbar-h: 52px;
+  --tabbar-h: 56px;
+}
+
+/* Dark appearance: applied by system preference unless the user pinned
+   light, and always when the user pinned dark. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance="light"]) { color-scheme: dark; }
+}
+:root[data-appearance="dark"] { color-scheme: dark; }
+</style>
+<style>
+/* Dark appearance. Backgrounds get dimmer and labels brighter; the pair is
+   not a straight inversion. Declared twice so the system preference and an
+   explicit choice both win in the right direction. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance="light"]) {
+    --tint:            #FF9F0A;  /* 8.28:1 on raised surfaces */
+    --tint-pressed:    #FFB340;
+    --tint-soft:       rgba(255, 159, 10, 0.18);
+    --tint-on:         #1A1204;
+    --destructive:     #FF453A;
+    --success:         #30D158;
+    --warning:         #FFD60A;
+    --warning-on:      #1A1204;   /* 14.4:1 */
+
+    --label:           #FFFFFF;
+    --label-secondary: rgba(235, 235, 245, 0.70);  /* 7.63:1 */
+    --label-tertiary:  rgba(235, 235, 245, 0.45);
+    --label-quaternary:rgba(235, 235, 245, 0.26);
+
+    --bg:              #000000;
+    --bg-card:         #1C1C1E;
+    --bg-raised:       #2C2C2E;
+    --bg-plain:        #1C1C1E;
+
+    --fill-1:          rgba(120, 120, 128, 0.36);
+    --fill-2:          rgba(120, 120, 128, 0.32);
+    --fill-3:          rgba(120, 120, 128, 0.24);
+    --fill-4:          rgba(120, 120, 128, 0.18);
+    --separator:       rgba(84, 84, 88, 0.65);
+    --separator-solid: #38383A;
+
+    --glass-tint:      rgba(28, 28, 30, 0.72);
+    --glass-solid:     #161618;
+    --scrim:           rgba(0, 0, 0, 0.55);
+    --shadow-card:     0 1px 2px rgba(0,0,0,.4);
+    --shadow-raised:   0 8px 40px rgba(0,0,0,.6);
+  }
+}
+:root[data-appearance="dark"] {
+  --tint:            #FF9F0A;
+  --tint-pressed:    #FFB340;
+  --tint-soft:       rgba(255, 159, 10, 0.18);
+  --tint-on:         #1A1204;
+  --destructive:     #FF453A;
+  --success:         #30D158;
+  --warning:         #FFD60A;
+  --warning-on:      #1A1204;   /* 14.4:1 */
+
+  --label:           #FFFFFF;
+  --label-secondary: rgba(235, 235, 245, 0.70);
+  --label-tertiary:  rgba(235, 235, 245, 0.45);
+  --label-quaternary:rgba(235, 235, 245, 0.26);
+
+  --bg:              #000000;
+  --bg-card:         #1C1C1E;
+  --bg-raised:       #2C2C2E;
+  --bg-plain:        #1C1C1E;
+
+  --fill-1:          rgba(120, 120, 128, 0.36);
+  --fill-2:          rgba(120, 120, 128, 0.32);
+  --fill-3:          rgba(120, 120, 128, 0.24);
+  --fill-4:          rgba(120, 120, 128, 0.18);
+  --separator:       rgba(84, 84, 88, 0.65);
+  --separator-solid: #38383A;
+
+  --glass-tint:      rgba(28, 28, 30, 0.72);
+  --glass-solid:     #161618;
+  --scrim:           rgba(0, 0, 0, 0.55);
+  --shadow-card:     0 1px 2px rgba(0,0,0,.4);
+  --shadow-raised:   0 8px 40px rgba(0,0,0,.6);
+}
+</style>
+<style>
+/* ==========================================================================
+   Base
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  /* The text size preference scales the whole type ramp at once, up to 200%. */
+  font-size: calc(100% * var(--text-scale, 1));
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+               "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  color: var(--label);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3, h4, p, figure, blockquote { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+img { max-width: 100%; display: block; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: var(--tint); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Every interactive element keeps a visible focus ring for keyboard and
+   switch-control users; pointer interaction does not show it. */
+:focus-visible {
+  outline: 3px solid var(--tint);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Type styles ------------------------------------------------------------ */
+.t-largetitle { font-size: var(--t-largetitle); line-height: var(--lh-largetitle); font-weight: 700; letter-spacing: -0.02em; }
+.t-title1     { font-size: var(--t-title1);     line-height: var(--lh-title1);     font-weight: 700; letter-spacing: -0.015em; }
+.t-title2     { font-size: var(--t-title2);     line-height: var(--lh-title2);     font-weight: 700; letter-spacing: -0.01em; }
+.t-title3     { font-size: var(--t-title3);     line-height: var(--lh-title3);     font-weight: 600; }
+.t-headline   { font-size: var(--t-headline);   line-height: var(--lh-headline);   font-weight: 600; }
+.t-body       { font-size: var(--t-body);       line-height: var(--lh-body);       font-weight: 400; }
+.t-callout    { font-size: var(--t-callout);    line-height: var(--lh-callout);    font-weight: 400; }
+.t-subhead    { font-size: var(--t-subhead);    line-height: var(--lh-subhead);    font-weight: 400; }
+.t-footnote   { font-size: var(--t-footnote);   line-height: var(--lh-footnote);   font-weight: 400; }
+.t-caption    { font-size: var(--t-caption);    line-height: var(--lh-caption);    font-weight: 400; }
+.secondary { color: var(--label-secondary); }
+.tertiary  { color: var(--label-tertiary); }
+.tabular   { font-variant-numeric: tabular-nums; }
+
+/* Motion ----------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Liquid Glass ------------------------------------------------------------
+   Reserved for the functional layer only: the top bar, the tab bar, the
+   floating timer and the primary cook button. Content never uses it. */
+.glass {
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  backdrop-filter: blur(30px) saturate(1.4);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: var(--glass-solid); }
+}
+/* Honour Reduce Transparency: translucency is decoration, legibility is not. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+:root[data-transparency="reduce"] .glass {
+  background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+</style>
+<style>
+/* ==========================================================================
+   Shell: top bar, tab bar (compact) / sidebar (regular width)
+   ========================================================================== */
+#app { min-height: 100dvh; }
+
+.topbar {
+  position: fixed; inset: 0 0 auto 0; z-index: 40;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--safe-t) calc(var(--gutter) + var(--safe-r)) 0 calc(var(--gutter) + var(--safe-l));
+  min-height: calc(var(--topbar-h) + var(--safe-t));
+  border-bottom: 0.5px solid transparent;
+  transition: border-color var(--dur-fast) linear, background-color var(--dur-fast) linear;
+}
+/* Scroll edge effect: the bar only separates itself from content once
+   content actually slides underneath it. */
+.topbar:not(.is-scrolled) { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.topbar.is-scrolled { border-bottom-color: var(--separator); }
+
+.topbar__title {
+  flex: 1; min-width: 0;
+  font-size: var(--t-headline); line-height: var(--lh-headline); font-weight: 600;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.topbar.is-scrolled .topbar__title { opacity: 1; transform: none; }
+.topbar__side { display: flex; align-items: center; gap: var(--sp-1); flex: 0 0 auto; min-width: 44px; }
+.topbar__side--end { justify-content: flex-end; }
+
+.main {
+  padding-top: calc(var(--topbar-h) + var(--safe-t));
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--sp-6));
+  padding-left: var(--safe-l); padding-right: var(--safe-r);
+}
+.wrap { max-width: var(--content-max); margin: 0 auto; padding: 0 var(--gutter); }
+.wrap--wide { max-width: 68rem; }
+
+.largetitle {
+  padding: var(--sp-2) 0 var(--sp-4);
+  font-size: var(--t-largetitle); line-height: var(--lh-largetitle);
+  font-weight: 700; letter-spacing: -0.02em;
+}
+
+.tabbar {
+  position: fixed; inset: auto 0 0 0; z-index: 40;
+  display: flex; justify-content: space-around; align-items: stretch;
+  padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
+  min-height: calc(var(--tabbar-h) + var(--safe-b));
+  border-top: 0.5px solid var(--separator);
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; min-height: var(--tap); padding: var(--sp-1) var(--sp-2);
+  color: var(--label-secondary); font-size: 11px; line-height: 1.1; font-weight: 500;
+  transition: color var(--dur-fast) var(--ease);
+}
+.tab .icon { width: 1.6em; height: 1.6em; }
+/* Selected state is carried by colour, weight and a filled icon, so it does
+   not depend on colour perception alone. */
+.tab[aria-current="page"] { color: var(--tint); font-weight: 600; }
+.tab[aria-current="page"] .icon { stroke-width: 2.5; }
+.tab:hover { color: var(--label); }
+.tab[aria-current="page"]:hover { color: var(--tint); }
+
+.sidebar { display: none; }
+
+@media (min-width: 900px) {
+  /* Regular width follows the desktop convention: a sidebar rather than a
+     bottom tab bar, and the content column stays comfortably readable. */
+  .tabbar { display: none; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; z-index: 45; width: 15rem;
+    display: flex; flex-direction: column; gap: var(--sp-1);
+    padding: calc(var(--safe-t) + var(--sp-5)) var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-l));
+    border-right: 0.5px solid var(--separator);
+  }
+  .sidebar__brand {
+    display: flex; align-items: center; gap: var(--sp-2);
+    padding: 0 var(--sp-3) var(--sp-5);
+    font-size: var(--t-title3); font-weight: 700; letter-spacing: -0.01em;
+  }
+  .sidebar .tab {
+    flex: 0 0 auto; flex-direction: row; justify-content: flex-start; gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md);
+    font-size: var(--t-body); font-weight: 500;
+  }
+  .sidebar .tab .icon { width: 1.35em; height: 1.35em; }
+  .sidebar .tab[aria-current="page"] { background: var(--tint-soft); }
+  .sidebar .tab:hover { background: var(--fill-4); }
+  .sidebar .tab[aria-current="page"]:hover { background: var(--tint-soft); }
+  .topbar { left: 15rem; }
+  .main { padding-left: 15rem; padding-bottom: var(--sp-8); }
+  .main .wrap { padding-left: var(--sp-6); padding-right: var(--sp-6); }
+}
+</style>
+<style>
+/* ==========================================================================
+   Controls
+   Every control clears the 44px comfortable minimum on touch.
+   ========================================================================== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: var(--tap); padding: 0 var(--sp-5); border-radius: var(--r-full);
+  font-size: var(--t-headline); font-weight: 600; color: var(--tint);
+  transition: transform var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease),
+              opacity var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.97); }
+.btn[disabled] { opacity: 0.4; pointer-events: none; }
+.btn .icon { width: 1.15em; height: 1.15em; }
+
+/* Only one filled action per screen carries the tint, so emphasis stays
+   where it belongs. */
+.btn--filled { background: var(--tint); color: var(--tint-on); }
+.btn--filled:hover { background: var(--tint-pressed); }
+.btn--tinted { background: var(--tint-soft); }
+.btn--tinted:hover { background: color-mix(in srgb, var(--tint) 22%, transparent); }
+.btn--gray { background: var(--fill-3); color: var(--label); }
+.btn--gray:hover { background: var(--fill-2); }
+.btn--plain { padding: 0 var(--sp-2); }
+.btn--plain:hover { background: var(--fill-4); }
+.btn--danger { color: var(--destructive); }
+.btn--danger.btn--filled { background: var(--destructive); color: #FFFFFF; }
+.btn--block { width: 100%; }
+.btn--large { min-height: 52px; font-size: var(--t-title3); }
+
+.iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--tap); height: var(--tap); border-radius: var(--r-full);
+  color: var(--tint); flex: 0 0 auto;
+  transition: background-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.iconbtn:hover { background: var(--fill-4); }
+.iconbtn:active { transform: scale(0.92); }
+.iconbtn .icon { width: 1.4em; height: 1.4em; }
+.iconbtn--neutral { color: var(--label-secondary); }
+.iconbtn--danger { color: var(--destructive); }
+
+.icon { width: 1em; height: 1em; display: block; fill: none; stroke: currentColor;
+        stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon--filled { fill: currentColor; stroke: none; }
+
+/* Inset grouped list ----------------------------------------------------- */
+.group { margin: 0 0 var(--sp-6); }
+.group__header {
+  padding: 0 var(--sp-4) var(--sp-2);
+  font-size: var(--t-footnote); line-height: var(--lh-footnote);
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--label-secondary);
+}
+.group__footer {
+  padding: var(--sp-2) var(--sp-4) 0;
+  font-size: var(--t-footnote); line-height: var(--lh-footnote); color: var(--label-secondary);
+}
+.list { background: var(--bg-card); border-radius: var(--r-lg); overflow: hidden; }
+.row {
+  display: flex; align-items: center; gap: var(--sp-3);
+  width: 100%; min-height: var(--tap); padding: var(--sp-3) var(--sp-4);
+  text-align: left; color: inherit;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.row + .row { box-shadow: inset 0 0.5px 0 var(--separator); }
+button.row:hover, label.row:hover { background: var(--fill-4); }
+.row__text { flex: 1; min-width: 0; }
+.row__title { display: block; font-size: var(--t-body); line-height: var(--lh-body); }
+.row__sub { display: block; font-size: var(--t-footnote); line-height: var(--lh-footnote);
+            color: var(--label-secondary); }
+.row__value { color: var(--label-secondary); text-align: right; }
+.row__chevron { color: var(--label-quaternary); width: 0.8em; height: 0.8em; flex: 0 0 auto; }
+.row--danger .row__title { color: var(--destructive); }
+
+/* Fields ----------------------------------------------------------------- */
+.field {
+  width: 100%; min-height: var(--tap); padding: var(--sp-3) var(--sp-4);
+  background: var(--fill-4); border: 1.5px solid transparent; border-radius: var(--r-md);
+  font-size: var(--t-body); line-height: var(--lh-body); color: var(--label);
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+  -webkit-appearance: none; appearance: none;
+}
+.field:focus { outline: none; border-color: var(--tint); background: var(--bg-card); }
+.field:focus-visible { outline: 3px solid var(--tint); outline-offset: 2px; }
+.field::placeholder { color: var(--label-secondary); }
+textarea.field { min-height: 6rem; resize: vertical; line-height: 1.5; }
+.field--plain { background: transparent; border-color: transparent; padding-left: 0; padding-right: 0; }
+.field--inline { min-height: 38px; padding: var(--sp-2) var(--sp-3); }
+
+.label { display: block; margin-bottom: var(--sp-2); font-size: var(--t-subhead);
+         font-weight: 600; color: var(--label-secondary); }
+.stack { display: flex; flex-direction: column; gap: var(--sp-4); }
+.field-row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+.field-row > * { flex: 1 1 9rem; min-width: 0; }
+
+.search {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3); background: var(--fill-4); border-radius: var(--r-md);
+  min-height: var(--tap);
+}
+.search .icon { color: var(--label-secondary); width: 1.15em; height: 1.15em; flex: 0 0 auto; }
+.search input { flex: 1; min-width: 0; background: none; border: 0; outline: none; font-size: var(--t-body); }
+.search input::placeholder { color: var(--label-secondary); }
+</style>
+<style>
+/* Chips, segmented control, switch, stepper ------------------------------ */
+.chips { display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none;
+         padding: var(--sp-1) var(--gutter); margin: 0 calc(var(--gutter) * -1); }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  display: inline-flex; align-items: center; gap: var(--sp-1); flex: 0 0 auto;
+  min-height: 34px; padding: 0 var(--sp-4); border-radius: var(--r-full);
+  /* raised to the comfortable touch target below */
+  background: var(--fill-4); color: var(--label);
+  font-size: var(--t-subhead); font-weight: 500; white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.chip:hover { background: var(--fill-3); }
+.chip[aria-pressed="true"] { background: var(--tint); color: var(--tint-on); font-weight: 600; }
+.chip[aria-pressed="true"]:hover { background: var(--tint-pressed); }
+.chip .icon { width: 1em; height: 1em; }
+@media (pointer: coarse) {
+  .chip { min-height: var(--tap); }
+  .segmented button { min-height: var(--tap); }
+}
+
+.segmented {
+  display: flex; gap: 2px; padding: 2px; background: var(--fill-4);
+  border-radius: var(--r-sm); width: 100%;
+}
+.segmented button {
+  flex: 1; min-height: 36px; padding: 0 var(--sp-3); border-radius: 6px;
+  font-size: var(--t-subhead); font-weight: 500; color: var(--label);
+  transition: background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.segmented button[aria-pressed="true"] {
+  background: var(--bg-card); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+
+.switch { position: relative; width: 51px; height: 31px; flex: 0 0 auto; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+.switch__track {
+  position: absolute; inset: 0; border-radius: var(--r-full); background: var(--fill-1);
+  transition: background-color var(--dur) var(--ease); pointer-events: none;
+}
+.switch__thumb {
+  position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 2px 6px rgba(0,0,0,.28);
+  transition: transform var(--dur) var(--ease); pointer-events: none;
+}
+.switch input:checked ~ .switch__track { background: var(--success); }
+.switch input:checked ~ .switch__thumb { transform: translateX(20px); }
+.switch input:focus-visible ~ .switch__track { outline: 3px solid var(--tint); outline-offset: 2px; }
+
+.stepper {
+  display: inline-flex; align-items: center; background: var(--fill-4); border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.stepper button {
+  width: var(--tap); height: var(--tap); display: grid; place-items: center; color: var(--tint);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.stepper button:hover { background: var(--fill-3); }
+.stepper button[disabled] { color: var(--label-quaternary); pointer-events: none; }
+.stepper__value {
+  min-width: 3.5rem; text-align: center; font-size: var(--t-headline); font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px var(--sp-2); border-radius: var(--r-full);
+  background: var(--fill-4); color: var(--label-secondary);
+  font-size: var(--t-caption); font-weight: 600; white-space: nowrap;
+}
+.badge .icon { width: 1.05em; height: 1.05em; }
+.badge--tint { background: var(--tint-soft); color: var(--tint); }
+
+/* Cards and media -------------------------------------------------------- */
+.cards { display: grid; gap: var(--sp-4); grid-template-columns: 1fr; }
+@media (min-width: 480px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .cards { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); } }
+
+.card {
+  position: relative;
+  display: flex; flex-direction: column; text-align: left;
+  background: var(--bg-card); border-radius: var(--r-xl); overflow: hidden;
+  box-shadow: var(--shadow-card); color: inherit;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,.08), 0 12px 32px rgba(0,0,0,.10); }
+.card:active { transform: scale(0.985); }
+.card__media { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3;
+               overflow: hidden; background: var(--fill-4); }
+/* Taken out of flow so the box keeps its aspect ratio: a height of 100%
+   against an auto-height parent falls back to the image's own height and
+   leaves the grid ragged. */
+.card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.card__link { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.card__link:hover { text-decoration: none; }
+.card__fav {
+  position: absolute; top: var(--sp-1); right: var(--sp-1); z-index: 2;
+  width: var(--tap); height: var(--tap); border-radius: 50%;
+  display: grid; place-items: center; color: #FFFFFF;
+  transition: transform var(--dur-fast) var(--ease);
+}
+.card__fav::before {
+  content: ""; position: absolute; width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(0,0,0,.42);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.card__fav .icon { position: relative; }
+.card__fav:active { transform: scale(0.88); }
+.card__fav .icon { width: 1.1em; height: 1.1em; }
+.card__body { padding: var(--sp-3) var(--sp-4) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
+.card__title { font-size: var(--t-headline); line-height: var(--lh-headline); font-weight: 600; }
+.card__meta { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+.placeholder {
+  width: 100%; height: 100%; display: grid; place-items: center;
+  background: linear-gradient(145deg, var(--fill-4), var(--fill-3));
+  color: var(--label-quaternary);
+}
+.placeholder .icon { width: 2.5rem; height: 2.5rem; stroke-width: 1.2; }
+
+.empty { text-align: center; padding: var(--sp-8) var(--sp-4); display: flex;
+         flex-direction: column; align-items: center; gap: var(--sp-3); }
+.empty .icon { width: 3rem; height: 3rem; color: var(--label-quaternary); stroke-width: 1.2; }
+.empty__title { font-size: var(--t-title3); font-weight: 600; }
+.empty__body { color: var(--label-secondary); max-width: 28rem; }
+</style>
+<style>
+/* Sheets, dialogs, toasts ------------------------------------------------ */
+.scrim {
+  position: fixed; inset: 0; z-index: 60; background: var(--scrim);
+  opacity: 0; transition: opacity var(--dur) var(--ease);
+}
+.scrim.is-open { opacity: 1; }
+
+.sheet {
+  position: fixed; inset: auto 0 0 0; z-index: 61;
+  max-height: 92dvh; display: flex; flex-direction: column;
+  background: var(--bg-raised);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--shadow-raised);
+  transform: translateY(100%);
+  transition: transform var(--dur-slow) var(--ease);
+  padding-bottom: var(--safe-b);
+}
+.sheet.is-open { transform: none; }
+.sheet__grip { width: 36px; height: 5px; border-radius: var(--r-full); background: var(--fill-1);
+               margin: var(--sp-2) auto var(--sp-1); flex: 0 0 auto; }
+.sheet__head {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3) var(--sp-3); flex: 0 0 auto;
+}
+.sheet__title { flex: 1; text-align: center; font-size: var(--t-headline); font-weight: 600;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet__head .btn, .sheet__head .iconbtn { flex: 0 0 auto; min-width: 3.5rem; }
+.sheet__body { overflow-y: auto; -webkit-overflow-scrolling: touch;
+               padding: 0 var(--gutter) var(--sp-6); }
+.sheet__foot { flex: 0 0 auto; padding: var(--sp-3) var(--gutter) var(--sp-4);
+               border-top: 0.5px solid var(--separator); }
+
+@media (min-width: 700px) {
+  /* On a wide window a centred dialog reads better than a bottom sheet. */
+  .sheet {
+    inset: 50% auto auto 50%; width: min(34rem, calc(100vw - 4rem));
+    max-height: 80dvh; border-radius: var(--r-xl);
+    transform: translate(-50%, -46%) scale(0.96); opacity: 0;
+    transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+  }
+  .sheet.is-open { transform: translate(-50%, -50%); opacity: 1; }
+}
+
+.toasts {
+  position: fixed; z-index: 80; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--sp-4));
+  display: flex; flex-direction: column; gap: var(--sp-2); align-items: center;
+  width: min(26rem, calc(100vw - 2rem)); pointer-events: none;
+}
+@media (min-width: 900px) { .toasts { bottom: var(--sp-6); } }
+.toast {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md);
+  background: var(--glass-tint); box-shadow: var(--shadow-raised);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4); backdrop-filter: blur(30px) saturate(1.4);
+  font-size: var(--t-subhead); pointer-events: auto;
+  animation: toast-in var(--dur) var(--ease);
+  border: 0.5px solid var(--separator);
+}
+.toast .icon { width: 1.2em; height: 1.2em; flex: 0 0 auto; }
+.toast--error .icon { color: var(--destructive); }
+.toast--ok .icon { color: var(--success); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* Connection banner: the kitchen is where the wifi is worst, so say plainly
+   when the app cannot reach the server rather than failing silently. */
+.offlinebar {
+  position: fixed; z-index: 41; left: 0; right: 0;
+  top: calc(var(--topbar-h) + var(--safe-t));
+  display: flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--gutter);
+  background: var(--warning); color: var(--warning-on);
+  font-size: var(--t-footnote); font-weight: 600;
+}
+@media (min-width: 900px) { .offlinebar { left: 15rem; } }
+.offlinebar .icon { width: 1.1em; height: 1.1em; }
+
+/* Floating timer pill ---------------------------------------------------- */
+.timerpill {
+  position: fixed; z-index: 50; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--sp-3));
+  display: none; align-items: center; gap: var(--sp-3);
+  min-height: var(--tap); padding: 0 var(--sp-3) 0 var(--sp-4);
+  border-radius: var(--r-full); border: 0.5px solid var(--separator);
+  box-shadow: var(--shadow-raised); color: var(--label);
+  max-width: calc(100vw - 2rem);
+}
+.timerpill.is-visible { display: flex; }
+@media (min-width: 900px) { .timerpill { bottom: var(--sp-6); left: auto; right: var(--sp-6); transform: none; } }
+.timerpill__time { font-size: var(--t-headline); font-weight: 700; font-variant-numeric: tabular-nums; }
+.timerpill__label { font-size: var(--t-footnote); color: var(--label-secondary);
+                    max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timerpill.is-done { border-color: var(--tint); }
+.timerpill.is-done .timerpill__time { color: var(--tint); }
+
+/* Steadily pulsing ring for a finished timer: a second, non-colour cue
+   that something needs attention. */
+@keyframes pulse-ring { 0%, 100% { box-shadow: var(--shadow-raised), 0 0 0 0 var(--tint-soft); }
+                        50% { box-shadow: var(--shadow-raised), 0 0 0 10px transparent; } }
+.timerpill.is-done { animation: pulse-ring 1.6s ease-in-out infinite; }
+</style>
+<style>
+/* ==========================================================================
+   Views
+   ========================================================================== */
+.hero { position: relative; margin: 0 calc(var(--gutter) * -1) var(--sp-4); }
+.hero__media { aspect-ratio: 3 / 2; background: var(--fill-4); overflow: hidden; }
+.hero__media img { width: 100%; height: 100%; object-fit: cover; }
+@media (min-width: 700px) { .hero { margin: 0 0 var(--sp-5); border-radius: var(--r-xl); overflow: hidden; }
+                            .hero__media { aspect-ratio: 21 / 9; } }
+
+.meta-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-3) 0 var(--sp-5); }
+.detail-head { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.detail-head__text { flex: 1; min-width: 0; }
+
+.ing { display: flex; align-items: flex-start; gap: var(--sp-3); width: 100%;
+       padding: var(--sp-3) var(--sp-4); min-height: var(--tap); text-align: left; }
+.ing + .ing { box-shadow: inset 0 0.5px 0 var(--separator); }
+.ing__check {
+  width: 24px; height: 24px; flex: 0 0 auto; margin-top: 1px; border-radius: 50%;
+  border: 1.8px solid var(--label-quaternary); display: grid; place-items: center;
+  color: transparent; transition: all var(--dur-fast) var(--ease);
+}
+.ing[aria-pressed="true"] .ing__check { background: var(--success); border-color: var(--success); color: #FFFFFF; }
+.ing[aria-pressed="true"] .ing__text { color: var(--label-tertiary); text-decoration: line-through; }
+.ing__check .icon { width: 14px; height: 14px; stroke-width: 3; }
+.ing__amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ing__group { padding: var(--sp-4) var(--sp-4) var(--sp-1); font-size: var(--t-footnote);
+              font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--label-secondary); }
+
+.step { display: flex; gap: var(--sp-3); padding: var(--sp-4); }
+.step + .step { box-shadow: inset 0 0.5px 0 var(--separator); }
+.step__no {
+  width: 28px; height: 28px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center;
+  background: var(--tint-soft); color: var(--tint);
+  font-size: var(--t-footnote); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.step__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start; }
+
+/* Editor ----------------------------------------------------------------- */
+.editrow { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-3) var(--sp-3); }
+.editrow + .editrow { box-shadow: inset 0 0.5px 0 var(--separator); }
+.editrow__grip { color: var(--label-quaternary); cursor: grab; touch-action: none;
+                 width: var(--tap); height: var(--tap); display: grid; place-items: center; flex: 0 0 auto; }
+.editrow__fields { flex: 1; min-width: 0; display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.editrow__fields .amount { flex: 0 1 4.5rem; min-width: 3.5rem; }
+.editrow__fields .unit   { flex: 0 1 5rem;   min-width: 3.5rem; }
+.editrow__fields .item   { flex: 4 1 9rem;   min-width: 7rem; }
+.editrow.is-dragging { opacity: .5; }
+/* The chevron points down when the extra fields are folded away and up when
+   they are showing, so the control states which way it will go. */
+.editrow [aria-expanded] .icon { transition: transform var(--dur-fast) var(--ease); }
+.editrow [aria-expanded="true"] .icon { transform: rotate(180deg); }
+.editrow.is-over { box-shadow: inset 0 2px 0 var(--tint); }
+
+.photo-slot {
+  position: relative; width: 100%; aspect-ratio: 3 / 2; border-radius: var(--r-lg);
+  overflow: hidden; background: var(--fill-4); display: grid; place-items: center;
+  border: 1.5px dashed var(--separator-solid); color: var(--label-secondary);
+}
+.photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.photo-slot__actions { position: absolute; right: var(--sp-2); bottom: var(--sp-2); display: flex; gap: var(--sp-2); }
+.photo-slot__btn {
+  display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 40px; padding: 0 var(--sp-4);
+  border-radius: var(--r-full); background: rgba(0,0,0,.55); color: #FFFFFF;
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  font-size: var(--t-subhead); font-weight: 600;
+}
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: var(--sp-2); }
+.photo-grid button { position: relative; aspect-ratio: 1; border-radius: var(--r-md); overflow: hidden;
+                     background: var(--fill-4); }
+.photo-grid img { width: 100%; height: 100%; object-fit: cover; }
+.photo-grid figcaption {
+  position: absolute; inset: auto 0 0 0; padding: var(--sp-3) var(--sp-2) var(--sp-1);
+  background: linear-gradient(transparent, rgba(0,0,0,.78)); color: #FFFFFF;
+  font-size: var(--t-caption); line-height: 1.2; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.photo-grid button:focus-visible { outline: 3px solid var(--tint); outline-offset: 2px; }
+
+.spinner {
+  width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto;
+  border: 2.5px solid var(--fill-2); border-top-color: var(--tint);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading { display: flex; align-items: center; justify-content: center; gap: var(--sp-3);
+           padding: var(--sp-7); color: var(--label-secondary); }
+</style>
+<style>
+/* Cooking mode -----------------------------------------------------------
+   A separate, deliberately larger environment: read at arm's length with
+   messy hands, so type is bigger and targets are wider than elsewhere. */
+.cook {
+  position: fixed; inset: 0; z-index: 70; background: var(--bg);
+  display: none; flex-direction: column;
+  padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+}
+.cook.is-open { display: flex; }
+.cook__bar { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); flex: 0 0 auto; }
+.cook__count { flex: 1; text-align: center; font-size: var(--t-subhead); font-weight: 600;
+               color: var(--label-secondary); font-variant-numeric: tabular-nums; }
+.cook__progress { height: 4px; background: var(--fill-3); flex: 0 0 auto; margin: 0 var(--sp-3);
+                  border-radius: var(--r-full); overflow: hidden; }
+.cook__progress > div { height: 100%; background: var(--tint); border-radius: var(--r-full);
+                        transition: width var(--dur) var(--ease); }
+.cook__body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+              padding: var(--sp-5) var(--gutter) var(--sp-6);
+              display: flex; flex-direction: column; align-items: center; }
+.cook__inner { width: 100%; max-width: 34rem; display: flex; flex-direction: column; gap: var(--sp-5); }
+.cook__step {
+  font-size: clamp(1.375rem, 1.05rem + 1.6vw, 2rem); line-height: 1.4; font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.cook__stepno { font-size: var(--t-footnote); font-weight: 700; letter-spacing: .08em;
+                text-transform: uppercase; color: var(--tint); }
+.cook__nav {
+  flex: 0 0 auto; display: flex; gap: var(--sp-3); align-items: center;
+  padding: var(--sp-3) var(--gutter) var(--sp-4);
+  border-top: 0.5px solid var(--separator);
+}
+.cook__nav .btn { flex: 1; min-height: 56px; font-size: var(--t-title3); }
+.cook__timer {
+  display: flex; align-items: center; gap: var(--sp-3); width: 100%;
+  padding: var(--sp-4); border-radius: var(--r-lg); background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+.cook__timer.is-done { box-shadow: 0 0 0 2px var(--tint), var(--shadow-card); }
+.cook__timer-time { font-size: var(--t-title1); font-weight: 700; font-variant-numeric: tabular-nums;
+                    letter-spacing: -0.02em; }
+.cook__photo { width: 100%; border-radius: var(--r-lg); overflow: hidden; background: var(--fill-4); }
+.cook__photo img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+
+.cook__done { text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--sp-4);
+              padding: var(--sp-7) 0; }
+.cook__done .icon { width: 4rem; height: 4rem; color: var(--success); stroke-width: 1.5; }
+
+/* Timers view ------------------------------------------------------------ */
+.timer-card {
+  display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4);
+  background: var(--bg-card); border-radius: var(--r-lg); box-shadow: var(--shadow-card);
+}
+.timer-card.is-done { box-shadow: 0 0 0 2px var(--tint), var(--shadow-card); }
+.timer-card__time { font-size: var(--t-title1); font-weight: 700; font-variant-numeric: tabular-nums;
+                    letter-spacing: -0.02em; min-width: 5.5ch; }
+.timer-card__text { flex: 1; min-width: 0; }
+.timer-card__label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr)); gap: var(--sp-2); }
+.presets button { min-height: 56px; border-radius: var(--r-md); background: var(--fill-4);
+                  font-size: var(--t-headline); font-weight: 600; color: var(--label);
+                  transition: background-color var(--dur-fast) var(--ease); }
+.presets button:hover { background: var(--fill-3); }
+
+/* Shopping list ---------------------------------------------------------- */
+.shop-item { display: flex; align-items: center; gap: var(--sp-3); }
+.shop-item .ing__text { flex: 1; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: var(--sp-3); }
+.stat { background: var(--bg-card); border-radius: var(--r-lg); padding: var(--sp-4); text-align: center; }
+.stat__n { font-size: var(--t-title1); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.stat__l { font-size: var(--t-footnote); color: var(--label-secondary); }
+
+.fab {
+  position: fixed; z-index: 50; right: calc(var(--gutter) + var(--safe-r));
+  bottom: calc(var(--tabbar-h) + var(--safe-b) + var(--sp-4));
+  width: 56px; height: 56px; border-radius: var(--r-full);
+  display: grid; place-items: center;
+  background: var(--tint); color: var(--tint-on);
+  box-shadow: 0 6px 24px rgba(0,0,0,.28);
+  transition: transform var(--dur) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+.fab:hover { background: var(--tint-pressed); }
+.fab:active { transform: scale(0.94); }
+.fab .icon { width: 1.6rem; height: 1.6rem; stroke-width: 2.2; }
+@media (min-width: 900px) { .fab { bottom: var(--sp-6); right: var(--sp-6); } }
+</style>
+</head>
+<body>
+
+<svg class="visually-hidden" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v15"/><path d="M6.5 15H20v4.5a2.5 2.5 0 0 1-2.5 2.5H6.5A2.5 2.5 0 0 1 4 19.5v-15"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h2.2l2.3 12.2a1.6 1.6 0 0 0 1.6 1.3h8.9a1.6 1.6 0 0 0 1.6-1.3L21 7H5"/></symbol>
+<symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="8"/><path d="M12 9.5v4l2.5 2M9 2h6"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.5Z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 4 7 12l8 8"/></symbol>
+<symbol id="i-fwd" viewBox="0 0 24 24"><path d="m9 4 8 8-8 8"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="m5 9 7 7 7-7"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.3s-7.9-4.6-7.9-10a4.6 4.6 0 0 1 8-3.1 4.6 4.6 0 0 1 7.9 3.1c0 5.4-8 10-8 10Z"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></symbol>
+<symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2.5s5.5 4.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-1.7.7-3.2 1.6-4.4.3 1.4 1.3 2.3 2.3 2.3 1.5 0 2-1.6 1.6-7.5Z"/></symbol>
+<symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M17 11.2a3.2 3.2 0 0 0 0-6.2M18 20h3.5a5.6 5.6 0 0 0-3.2-5"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8a1 1 0 0 0 .84-.46l.92-1.42A1 1 0 0 1 9.9 3.6h4.2a1 1 0 0 1 .84.52l.92 1.42a1 1 0 0 0 .84.46h1.8A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5Z"/><circle cx="12" cy="13" r="3.6"/></symbol>
+<symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.6"/><circle cx="8.5" cy="10" r="1.7"/><path d="m3.6 17.4 4.6-4.3a2 2 0 0 1 2.7 0l3.2 3M14 14.6l1.6-1.4a2 2 0 0 1 2.7.06l2.1 2"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7M6.5 6.5l.9 12.2a2 2 0 0 0 2 1.8h5.2a2 2 0 0 0 2-1.8l.9-12.2M10 10.5v6M14 10.5v6"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20.1h4l10-10a2.8 2.8 0 0 0-4-4l-10 10Z"/><path d="m13.5 6.5 4 4"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.6 4.6L19 6.6"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.6 19 12 7 19.4Z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 4.5v15M15 4.5v15"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 11a8 8 0 1 1 2 6.3"/><path d="M3.5 20v-5h5"/></symbol>
+<symbol id="i-import" viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10 12 14.5 16.5 10"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2"/></symbol>
+<symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2"/></symbol>
+<symbol id="i-grip" viewBox="0 0 24 24"><path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" stroke-width="2.6"/></symbol>
+<symbol id="i-sort" viewBox="0 0 24 24"><path d="M4 7h16M6.5 12h11M10 17h4"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8h.01" stroke-width="2.2"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.7 21 19.5H3Z"/><path d="M12 9.5v4M12 16.6h.01" stroke-width="2.2"/></symbol>
+</defs>
+</svg>
+
+<div id="app">
+  <aside class="sidebar glass" aria-label="Sections">
+    <div class="sidebar__brand"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg> Cook</div>
+    <nav id="sidebarNav" aria-label="Main"></nav>
+  </aside>
+
+  <header class="topbar glass" id="topbar">
+    <div class="topbar__side" id="topbarStart"></div>
+    <h1 class="topbar__title" id="topbarTitle">Cook</h1>
+    <div class="topbar__side topbar__side--end" id="topbarEnd"></div>
+  </header>
+
+  <main class="main" id="main" tabindex="-1"></main>
+
+  <nav class="tabbar glass" id="tabbar" aria-label="Main"></nav>
+</div>
+
+<div class="offlinebar" id="offlineBar" role="status" hidden></div>
+
+<button class="timerpill glass" id="timerPill" type="button" hidden>
+  <svg class="icon" aria-hidden="true"><use href="#i-timer"/></svg>
+  <span class="timerpill__time tabular" id="timerPillTime">0:00</span>
+  <span class="timerpill__label" id="timerPillLabel"></span>
+</button>
+
+<div class="cook" id="cook" role="dialog" aria-modal="true" aria-label="Cooking mode" hidden></div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" hidden></div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<script>
+/* Classic scripts sharing one global lexical scope: every block below is a
+   complete program, so the file can be read section by section. */
+"use strict";
+
+/* ==========================================================================
+   Small helpers
+   Nodes are built rather than assembled from HTML strings, so recipe text
+   the user typed can never be interpreted as markup.
+   ========================================================================== */
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function append(parent, child) {
+  if (child === null || child === undefined || child === false) return;
+  if (Array.isArray(child)) { child.forEach(function (c) { append(parent, c); }); return; }
+  parent.appendChild(child.nodeType ? child : document.createTextNode(String(child)));
+}
+
+function el(tag, props, children) {
+  const node = document.createElement(tag);
+  if (props) {
+    Object.keys(props).forEach(function (key) {
+      const value = props[key];
+      if (value === null || value === undefined || value === false) return;
+      if (key === "class") node.className = value;
+      else if (key === "text") node.textContent = value;
+      else if (key === "dataset") Object.assign(node.dataset, value);
+      else if (key.slice(0, 2) === "on") node.addEventListener(key.slice(2).toLowerCase(), value);
+      else node.setAttribute(key, value === true ? "" : value);
+    });
+  }
+  append(node, children);
+  return node;
+}
+
+function icon(name, cls) {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("class", cls ? "icon " + cls : "icon");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const use = document.createElementNS(SVG_NS, "use");
+  use.setAttribute("href", "#i-" + name);
+  svg.appendChild(use);
+  return svg;
+}
+
+const $ = function (sel, root) { return (root || document).querySelector(sel); };
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function setContent(node, children) { clear(node); append(node, children); }
+
+/* ------------------------------------------------------------------ API -- */
+// Derived at run time so the app also works when served under a sub-path.
+const BASE = location.pathname.replace(/[^/]*$/, "") || "/";
+
+async function api(path, options) {
+  const opts = Object.assign({ headers: {} }, options);
+  if (opts.body !== undefined && !(opts.body instanceof FormData)) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(opts.body);
+  }
+  const resp = await fetch(BASE + path, opts);
+  if (!resp.ok) {
+    let detail = "Request failed (" + resp.status + ")";
+    try {
+      const data = await resp.json();
+      if (data && data.detail) detail = typeof data.detail === "string" ? data.detail : detail;
+    } catch (err) { /* the body was not JSON; the status text is enough */ }
+    throw new Error(detail);
+  }
+  return resp.status === 204 ? null : resp.json();
+}
+
+const photoUrl = function (id) { return BASE + "api/photos/" + id; };
+
+/* ------------------------------------------------------------ formatting -- */
+const FRACTIONS = [
+  [1 / 8, "\u215B"], [1 / 4, "\u00BC"], [1 / 3, "\u2153"], [1 / 2, "\u00BD"],
+  [2 / 3, "\u2154"], [3 / 4, "\u00BE"]
+];
+
+// Scaled amounts are shown the way a cook would write them: 1½ rather than 1.5.
+function formatAmount(value) {
+  if (value === null || value === undefined || isNaN(value)) return "";
+  if (value === 0) return "0";
+  const rounded = Math.round(value * 100) / 100;
+  const whole = Math.floor(rounded);
+  const rest = rounded - whole;
+  if (rest < 0.02) return String(whole);
+  for (let i = 0; i < FRACTIONS.length; i++) {
+    if (Math.abs(rest - FRACTIONS[i][0]) < 0.04) {
+      return (whole > 0 ? whole : "") + FRACTIONS[i][1];
+    }
+  }
+  if (rounded < 10) return String(Math.round(rounded * 10) / 10);
+  return String(Math.round(rounded));
+}
+
+function formatMinutes(total) {
+  const mins = Math.max(0, Math.round(total || 0));
+  if (!mins) return "";
+  if (mins < 60) return mins + " min";
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? h + " h " + m + " min" : h + " h";
+}
+
+function formatClock(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = function (n) { return n < 10 ? "0" + n : String(n); };
+  return h ? h + ":" + pad(m) + ":" + pad(sec) : m + ":" + pad(sec);
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function formatBytes(n) {
+  if (!n) return "0 kB";
+  if (n < 1024 * 1024) return Math.round(n / 1024) + " kB";
+  return (n / 1024 / 1024).toFixed(1) + " MB";
+}
+
+const plural = function (n, one, many) { return n + " " + (n === 1 ? one : many); };
+</script>
+<script>
+/* ==========================================================================
+   State and preferences
+   Recipes, photos and the shopping list live on the server so that a phone
+   and a desktop always agree. Only the things that are genuinely per-device
+   are kept in this browser.
+   ========================================================================== */
+"use strict";
+
+const PREF_KEY = "mordorcook.prefs";
+const TIMER_KEY = "mordorcook.timers";
+const CHECKED_KEY = "mordorcook.checked";
+const COOKING_KEY = "mordorcook.cooking";
+
+function readStore(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (err) {
+    return fallback;   // private browsing, or a value from an older version
+  }
+}
+
+function writeStore(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* private mode */ }
+}
+
+const defaultPrefs = {
+  appearance: "auto",     // auto | light | dark
+  textScale: 1,
+  reduceMotion: false,
+  reduceTransparency: false,
+  keepAwake: true,
+  sound: true
+};
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREF_KEY);
+    return Object.assign({}, defaultPrefs, raw ? JSON.parse(raw) : {});
+  } catch (err) {
+    return Object.assign({}, defaultPrefs);
+  }
+}
+
+function savePrefs() {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify(state.prefs)); } catch (err) { /* private mode */ }
+  applyPrefs();
+}
+
+function applyPrefs() {
+  const root = document.documentElement;
+  root.setAttribute("data-appearance", state.prefs.appearance);
+  root.style.setProperty("--text-scale", String(state.prefs.textScale));
+  root.setAttribute("data-motion", state.prefs.reduceMotion ? "reduce" : "no-preference");
+  root.setAttribute("data-transparency", state.prefs.reduceTransparency ? "reduce" : "no-preference");
+}
+
+const state = {
+  recipes: [],
+  shopping: [],
+  loaded: false,
+  filters: { q: "", tag: "", favorite: false, sort: "updated" },
+  checked: readStore(CHECKED_KEY, {}),   // recipe id -> ticked ingredient indexes
+  prefs: loadPrefs(),
+  route: { name: "library", params: {} }
+};
+
+const findRecipe = function (id) {
+  return state.recipes.filter(function (r) { return r.id === id; })[0] || null;
+};
+
+async function refreshRecipes() {
+  state.recipes = await api("api/recipes?sort=" + encodeURIComponent(state.filters.sort));
+  state.loaded = true;
+}
+
+async function refreshShopping() {
+  state.shopping = await api("api/shopping");
+}
+
+function allTags() {
+  const seen = {};
+  state.recipes.forEach(function (r) {
+    (r.tags || []).forEach(function (t) { seen[t] = true; });
+    if (r.category) seen[r.category] = true;
+  });
+  return Object.keys(seen).sort();
+}
+
+/* ------------------------------------------------------------- feedback -- */
+function toast(message, kind, action) {
+  const host = $("#toasts");
+  const dismiss = function () {
+    node.style.transition = "opacity 200ms linear";
+    node.style.opacity = "0";
+    setTimeout(function () { node.remove(); }, 220);
+  };
+  const node = el("div", { class: "toast" + (kind ? " toast--" + kind : "") }, [
+    kind === "error" ? icon("warn") : kind === "ok" ? icon("check") : icon("info"),
+    el("span", { text: message, style: "flex:1" }),
+    // An action here is what makes a destructive step recoverable rather than
+    // merely announced.
+    action ? el("button", {
+      class: "btn btn--plain", type: "button", text: action.label,
+      style: "min-height:32px;padding:0 4px;font-weight:700",
+      onclick: function () { dismiss(); action.onAction(); }
+    }) : null
+  ]);
+  host.appendChild(node);
+  setTimeout(dismiss, action ? 8000 : kind === "error" ? 5200 : 3000);
+}
+
+function reportError(err) {
+  toast(err && err.message ? err.message : "Something went wrong", "error");
+}
+
+// A short tap of haptic feedback where the platform offers it.
+function haptic(pattern) {
+  if (navigator.vibrate) { try { navigator.vibrate(pattern || 12); } catch (err) { /* ignore */ } }
+}
+</script>
+<script>
+/* ==========================================================================
+   Sheets and dialogs
+   ========================================================================== */
+"use strict";
+
+let sheetState = null;
+
+function focusables(root) {
+  return Array.prototype.slice.call(root.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]),' +
+    ' textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter(function (n) { return n.offsetParent !== null || n === document.activeElement; });
+}
+
+function openSheet(options) {
+  closeSheet(true);
+  const sheet = $("#sheet");
+  const scrim = $("#scrim");
+  const restoreTo = document.activeElement;
+
+  const head = el("div", { class: "sheet__head" }, [
+    options.leading || el("button", {
+      class: "btn btn--plain", type: "button", text: options.cancelLabel || "Cancel",
+      onclick: function () { closeSheet(); }
+    }),
+    el("h2", { class: "sheet__title", id: "sheetTitle", text: options.title || "" }),
+    options.trailing || el("span", { class: "topbar__side" })
+  ]);
+  const body = el("div", { class: "sheet__body" }, options.body);
+
+  setContent(sheet, [el("div", { class: "sheet__grip" }), head, body,
+    options.footer ? el("div", { class: "sheet__foot" }, options.footer) : null]);
+  sheet.setAttribute("aria-labelledby", "sheetTitle");
+
+  scrim.hidden = false;
+  sheet.hidden = false;
+  // Two frames so the transition has a start value to animate from.
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { scrim.classList.add("is-open"); sheet.classList.add("is-open"); });
+  });
+
+  sheetState = { restoreTo: restoreTo, onClose: options.onClose };
+  const first = focusables(sheet)[options.focusIndex || 0];
+  if (first) setTimeout(function () { first.focus(); }, 60);
+  return body;
+}
+
+function closeSheet(immediate) {
+  const sheet = $("#sheet");
+  const scrim = $("#scrim");
+  if (sheet.hidden) return;
+  const previous = sheetState;
+  sheetState = null;
+  sheet.classList.remove("is-open");
+  scrim.classList.remove("is-open");
+  const finish = function () {
+    sheet.hidden = true;
+    scrim.hidden = true;
+    clear(sheet);
+    if (previous && previous.restoreTo && previous.restoreTo.isConnected) previous.restoreTo.focus();
+    if (previous && previous.onClose) previous.onClose();
+  };
+  if (immediate) finish(); else setTimeout(finish, 300);
+}
+
+// A confirmation step for anything that destroys work, as the guidelines ask
+// for destructive actions.
+function confirmAction(options) {
+  return new Promise(function (resolve) {
+    let settled = false;
+    const done = function (value) {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+      closeSheet();
+    };
+    openSheet({
+      title: options.title,
+      cancelLabel: "Cancel",
+      onClose: function () { done(false); },
+      body: el("p", { class: "t-callout secondary", text: options.message,
+                      style: "padding:8px 4px 20px" }),
+      footer: el("div", { class: "stack" }, [
+        el("button", {
+          class: "btn btn--filled btn--block" + (options.destructive ? " btn--danger" : ""),
+          type: "button", text: options.confirmLabel || "Confirm",
+          onclick: function () { done(true); }
+        }),
+        el("button", { class: "btn btn--gray btn--block", type: "button", text: "Cancel",
+                       onclick: function () { done(false); } })
+      ])
+    });
+  });
+}
+
+$("#scrim").addEventListener("click", function () { closeSheet(); });
+
+document.addEventListener("keydown", function (event) {
+  if (event.key !== "Escape") return;
+  if (!$("#sheet").hidden) { closeSheet(); return; }
+  if ($("#cook").classList.contains("is-open")) closeCook();
+});
+
+// Keep focus inside whichever modal surface is open.
+document.addEventListener("focusin", function (event) {
+  const sheet = $("#sheet");
+  if (!sheet.hidden) {
+    if (sheet.contains(event.target)) return;
+    const list = focusables(sheet);
+    if (list.length) list[0].focus();
+    return;
+  }
+  const cook = $("#cook");
+  if (cook.classList.contains("is-open") && !cook.contains(event.target)) {
+    const list = focusables(cook);
+    if (list.length) list[0].focus();
+  }
+});
+</script>
+<script>
+/* ==========================================================================
+   Navigation shell
+   ========================================================================== */
+"use strict";
+
+const TABS = [
+  { id: "library",  route: "#/recipes",  label: "Recipes",  icon: "book" },
+  { id: "shopping", route: "#/shopping", label: "Shopping", icon: "cart" },
+  { id: "timers",   route: "#/timers",   label: "Timers",   icon: "timer" },
+  { id: "settings", route: "#/settings", label: "Settings", icon: "gear" }
+];
+
+function tabOf(routeName) {
+  if (routeName === "recipe" || routeName === "editor") return "library";
+  return routeName;
+}
+
+function renderTabs() {
+  const current = tabOf(state.route.name);
+  const build = function (host) {
+    setContent(host, TABS.map(function (tab) {
+      const active = tab.id === current;
+      return el("a", {
+        class: "tab", href: tab.route,
+        "aria-current": active ? "page" : null
+      }, [icon(tab.icon), el("span", { text: tab.label })]);
+    }));
+  };
+  build($("#tabbar"));
+  build($("#sidebarNav"));
+}
+
+function setTopbar(options) {
+  const start = $("#topbarStart");
+  const end = $("#topbarEnd");
+  $("#topbarTitle").textContent = options.title || "";
+  setContent(start, options.leading || null);
+  setContent(end, options.trailing || null);
+}
+
+function backButton(href, label) {
+  return el("a", { class: "iconbtn", href: href, "aria-label": label || "Back" }, icon("back"));
+}
+
+/* The top bar only grows a background and a separator once content has
+   actually scrolled under it. */
+function watchScroll() {
+  const bar = $("#topbar");
+  let ticking = false;
+  const update = function () {
+    bar.classList.toggle("is-scrolled", window.scrollY > 8);
+    ticking = false;
+  };
+  window.addEventListener("scroll", function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }, { passive: true });
+  update();
+}
+
+/* -------------------------------------------------------------- router -- */
+function parseRoute() {
+  const raw = location.hash.replace(/^#\/?/, "");
+  const parts = raw.split("/").filter(Boolean);
+  if (!parts.length) return { name: "library", params: {} };
+  const head = parts[0];
+  if (head === "recipes") return { name: "library", params: {} };
+  if (head === "recipe" && parts[1]) return { name: "recipe", params: { id: parts[1] } };
+  if (head === "new") return { name: "editor", params: { id: null } };
+  if (head === "edit" && parts[1]) return { name: "editor", params: { id: parts[1] } };
+  if (head === "cook" && parts[1]) return { name: "cook", params: { id: parts[1] } };
+  if (head === "shopping") return { name: "shopping", params: {} };
+  if (head === "timers") return { name: "timers", params: {} };
+  if (head === "settings") return { name: "settings", params: {} };
+  return { name: "library", params: {} };
+}
+
+const VIEWS = {};
+
+async function render() {
+  const route = parseRoute();
+  const previous = state.route;
+  state.route = route;
+
+  // Cooking mode is an overlay rather than a page, so it opens and closes
+  // without tearing down whatever is underneath it.
+  if (route.name === "cook") {
+    renderTabs();
+    if (!state.loaded) { try { await refreshRecipes(); } catch (err) { reportError(err); } }
+    openCook(route.params.id);
+    return;
+  }
+  if ($("#cook").classList.contains("is-open")) closeCook(true);
+
+  renderTabs();
+  if (route.name !== "editor") navGuard = null;
+  const main = $("#main");
+  const view = VIEWS[route.name] || VIEWS.library;
+  const sameView = previous && previous.name === route.name && previous.params.id === route.params.id;
+  if (!sameView) window.scrollTo(0, 0);
+
+  try {
+    await view(main, route.params);
+  } catch (err) {
+    reportError(err);
+    setContent(main, el("div", { class: "wrap" }, el("div", { class: "empty" }, [
+      icon("warn"),
+      el("p", { class: "empty__title", text: "Could not load this" }),
+      el("p", { class: "empty__body", text: err.message })
+    ])));
+  }
+  $("#topbar").classList.toggle("is-scrolled", window.scrollY > 8);
+}
+
+function go(hash, replace) {
+  if (replace) location.replace(hash);
+  else location.hash = hash;
+}
+
+/* A view with unsaved work registers a guard here, so leaving by the tab bar
+   or the browser's back button asks first instead of discarding silently. */
+let navGuard = null;
+
+window.addEventListener("hashchange", async function () {
+  if (navGuard && navGuard.isDirty() && location.hash !== navGuard.hash) {
+    const target = location.hash;
+    // Put the address back without firing another hashchange, so declining
+    // leaves the half-written recipe exactly as it was.
+    history.replaceState(null, "", navGuard.hash);
+    const ok = await confirmAction({
+      title: "Discard changes?",
+      message: "The edits you made to this recipe will not be saved.",
+      confirmLabel: "Discard", destructive: true
+    });
+    if (!ok) return;
+    navGuard = null;
+    location.hash = target;
+    return;
+  }
+  render();
+});
+
+window.addEventListener("beforeunload", function (event) {
+  if (!navGuard || !navGuard.isDirty()) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
+function loadingView() {
+  return el("div", { class: "loading" }, [el("div", { class: "spinner" }), el("span", { text: "Loading" })]);
+}
+</script>
+<script>
+/* ==========================================================================
+   Timers
+   Timers are stored as an absolute end time, so they stay correct while the
+   tab is backgrounded, the screen is off, or the page is reloaded.
+   ========================================================================== */
+"use strict";
+
+let timers = [];
+let audioContext = null;
+let alarmTimer = null;
+
+function loadTimers() {
+  try {
+    const raw = localStorage.getItem(TIMER_KEY);
+    timers = raw ? JSON.parse(raw) : [];
+  } catch (err) { timers = []; }
+  const now = Date.now();
+  timers.forEach(function (t) {
+    if (!t.paused && t.endsAt <= now) t.done = true;
+  });
+}
+
+function persistTimers() {
+  try { localStorage.setItem(TIMER_KEY, JSON.stringify(timers)); } catch (err) { /* private mode */ }
+}
+
+function timerRemaining(t) {
+  if (t.done) return 0;
+  if (t.paused) return t.remaining;
+  return Math.max(0, (t.endsAt - Date.now()) / 1000);
+}
+
+function addTimer(options) {
+  const seconds = Math.max(1, Math.round(options.seconds));
+  const timer = {
+    id: "t" + Date.now() + Math.random().toString(36).slice(2, 7),
+    label: options.label || "Timer",
+    duration: seconds,
+    endsAt: Date.now() + seconds * 1000,
+    paused: false,
+    remaining: seconds,
+    done: false,
+    recipeId: options.recipeId || null,
+    stepIndex: typeof options.stepIndex === "number" ? options.stepIndex : null
+  };
+  timers.push(timer);
+  persistTimers();
+  unlockAudio();
+  requestNotifications();
+  updateTimerViews();
+  return timer;
+}
+
+function findTimer(id) { return timers.filter(function (t) { return t.id === id; })[0] || null; }
+
+function toggleTimer(id) {
+  const t = findTimer(id);
+  if (!t || t.done) return;
+  if (t.paused) {
+    t.paused = false;
+    t.endsAt = Date.now() + t.remaining * 1000;
+  } else {
+    t.paused = true;
+    t.remaining = timerRemaining(t);
+  }
+  persistTimers();
+  updateTimerViews();
+}
+
+function resetTimer(id) {
+  const t = findTimer(id);
+  if (!t) return;
+  t.done = false;
+  t.paused = false;
+  t.remaining = t.duration;
+  t.endsAt = Date.now() + t.duration * 1000;
+  persistTimers();
+  stopAlarmIfIdle();
+  updateTimerViews();
+}
+
+function removeTimer(id) {
+  timers = timers.filter(function (t) { return t.id !== id; });
+  persistTimers();
+  stopAlarmIfIdle();
+  updateTimerViews();
+}
+
+function dismissTimer(id) { removeTimer(id); }
+
+/* ---------------------------------------------------------------- alarm -- */
+function unlockAudio() {
+  if (audioContext || !state.prefs.sound) return;
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if (!Ctor) return;
+  try {
+    audioContext = new Ctor();
+    if (audioContext.state === "suspended") audioContext.resume();
+  } catch (err) { audioContext = null; }
+}
+
+function beep() {
+  if (!state.prefs.sound || !audioContext) return;
+  const now = audioContext.currentTime;
+  [0, 0.28, 0.56].forEach(function (offset) {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now + offset);
+    gain.gain.setValueAtTime(0.0001, now + offset);
+    gain.gain.exponentialRampToValueAtTime(0.28, now + offset + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.22);
+    osc.connect(gain).connect(audioContext.destination);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.24);
+  });
+}
+
+function requestNotifications() {
+  if (!("Notification" in window) || Notification.permission !== "default") return;
+  try { Notification.requestPermission(); } catch (err) { /* older browsers */ }
+}
+
+function fireTimer(timer) {
+  timer.done = true;
+  timer.paused = false;
+  persistTimers();
+  haptic([220, 120, 220, 120, 320]);
+  beep();
+  if (alarmTimer) clearInterval(alarmTimer);
+  // Keep sounding until it is acknowledged; a pot does not stop boiling
+  // because a single beep was missed.
+  alarmTimer = setInterval(beep, 3000);
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification(timer.label, { body: "Timer finished", tag: timer.id, renotify: true });
+    } catch (err) { /* not supported in this context */ }
+  }
+  toast(timer.label + " \u2014 time is up", "ok");
+}
+
+function stopAlarmIfIdle() {
+  const anyDone = timers.some(function (t) { return t.done; });
+  if (!anyDone && alarmTimer) { clearInterval(alarmTimer); alarmTimer = null; }
+}
+</script>
+<script>
+/* Timer tick: one loop drives every countdown on screen. */
+"use strict";
+
+function updateTimerViews() {
+  // Live countdowns anywhere in the document.
+  Array.prototype.forEach.call(document.querySelectorAll("[data-timer-time]"), function (node) {
+    const timer = findTimer(node.getAttribute("data-timer-time"));
+    if (!timer) return;
+    node.textContent = timer.done ? "Done" : formatClock(timerRemaining(timer));
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-timer-card]"), function (node) {
+    const timer = findTimer(node.getAttribute("data-timer-card"));
+    if (timer) node.classList.toggle("is-done", !!timer.done);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-timer-toggle]"), function (node) {
+    const timer = findTimer(node.getAttribute("data-timer-toggle"));
+    if (!timer) return;
+    const label = timer.paused ? "Resume" : "Pause";
+    setContent(node, icon(timer.paused ? "play" : "pause"));
+    node.setAttribute("aria-label", label + " " + timer.label);
+    node.hidden = !!timer.done;
+  });
+  updatePill();
+  if (state.route.name === "timers") renderTimerList();
+}
+
+function pillTimer() {
+  const done = timers.filter(function (t) { return t.done; });
+  if (done.length) return done[0];
+  const running = timers.filter(function (t) { return !t.paused; });
+  running.sort(function (a, b) { return a.endsAt - b.endsAt; });
+  if (running.length) return running[0];
+  return timers[0] || null;
+}
+
+function updatePill() {
+  const pill = $("#timerPill");
+  const timer = pillTimer();
+  const inCook = $("#cook").classList.contains("is-open");
+  if (!timer || inCook || state.route.name === "timers") {
+    pill.hidden = true;
+    pill.classList.remove("is-visible");
+    return;
+  }
+  pill.hidden = false;
+  pill.classList.add("is-visible");
+  pill.classList.toggle("is-done", !!timer.done);
+  $("#timerPillTime").textContent = timer.done ? "Done" : formatClock(timerRemaining(timer));
+  $("#timerPillLabel").textContent = timer.label;
+  pill.setAttribute("aria-label",
+    timer.done ? timer.label + ", finished. Open timers." : timer.label + ", " +
+    formatClock(timerRemaining(timer)) + " remaining. Open timers.");
+}
+
+function tick() {
+  let changed = false;
+  timers.forEach(function (t) {
+    if (!t.done && !t.paused && timerRemaining(t) <= 0) { fireTimer(t); changed = true; }
+  });
+  updateTimerViews();
+  if (changed) persistTimers();
+}
+
+setInterval(tick, 250);
+
+$("#timerPill").addEventListener("click", function () {
+  const timer = pillTimer();
+  if (timer && timer.done) { dismissTimer(timer.id); return; }
+  go("#/timers");
+});
+
+// A timer that finished while the tab was hidden should announce itself the
+// moment the tab comes back.
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden) tick();
+});
+</script>
+<script>
+/* ==========================================================================
+   Library
+   ========================================================================== */
+"use strict";
+
+const SORTS = [
+  { id: "updated", label: "Recently updated" },
+  { id: "created", label: "Recently added" },
+  { id: "title",   label: "Name" },
+  { id: "cooked",  label: "Most cooked" },
+  { id: "time",    label: "Quickest first" }
+];
+
+const totalMinutes = function (r) { return (r.prep_minutes || 0) + (r.cook_minutes || 0); };
+
+function matchesFilters(recipe) {
+  const f = state.filters;
+  if (f.favorite && !recipe.favorite) return false;
+  if (f.tag && (recipe.tags || []).indexOf(f.tag) < 0 && recipe.category !== f.tag) return false;
+  if (f.q) {
+    const needle = f.q.toLowerCase();
+    const hay = [recipe.title, recipe.summary, recipe.category, recipe.cuisine]
+      .concat(recipe.tags || [])
+      .concat((recipe.ingredients || []).map(function (i) { return i.item; }))
+      .join(" ").toLowerCase();
+    if (hay.indexOf(needle) < 0) return false;
+  }
+  return true;
+}
+
+function sortedRecipes(list) {
+  const copy = list.slice();
+  const sort = state.filters.sort;
+  copy.sort(function (a, b) {
+    if (sort === "title") return a.title.localeCompare(b.title);
+    if (sort === "cooked") return (b.cooked_count || 0) - (a.cooked_count || 0);
+    if (sort === "time") return totalMinutes(a) - totalMinutes(b);
+    if (sort === "created") return String(b.created_at).localeCompare(String(a.created_at));
+    return String(b.updated_at).localeCompare(String(a.updated_at));
+  });
+  return copy;
+}
+
+function recipeCard(recipe) {
+  const time = totalMinutes(recipe);
+  const favButton = el("button", {
+    class: "card__fav", type: "button", "aria-pressed": String(!!recipe.favorite),
+    "aria-label": (recipe.favorite ? "Remove " : "Add ") + recipe.title +
+                  (recipe.favorite ? " from favourites" : " to favourites"),
+    onclick: async function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      try {
+        await toggleFavorite(recipe);
+        setContent(favButton, icon("heart", recipe.favorite ? "icon--filled" : null));
+        favButton.setAttribute("aria-pressed", String(!!recipe.favorite));
+        favButton.setAttribute("aria-label", (recipe.favorite ? "Remove " : "Add ") + recipe.title +
+                               (recipe.favorite ? " from favourites" : " to favourites"));
+        haptic();
+      } catch (err) { reportError(err); }
+    }
+  }, icon("heart", recipe.favorite ? "icon--filled" : null));
+
+  const media = el("div", { class: "card__media" }, [
+    recipe.photo_id
+      ? el("img", { src: photoUrl(recipe.photo_id), alt: "", loading: "lazy", decoding: "async" })
+      : el("div", { class: "placeholder" }, icon("photo")),
+    favButton
+  ]);
+
+  const meta = [];
+  if (time) meta.push(el("span", { class: "badge" }, [icon("clock"), formatMinutes(time)]));
+  if (recipe.servings) meta.push(el("span", { class: "badge" }, [icon("people"), String(recipe.servings)]));
+  if (recipe.cooked_count) {
+    meta.push(el("span", { class: "badge badge--tint" },
+      [icon("flame"), plural(recipe.cooked_count, "cook", "cooks")]));
+  }
+
+  return el("div", { class: "card" }, [
+    media,
+    el("div", { class: "card__body" }, [
+      el("span", { class: "card__title", text: recipe.title }),
+      recipe.summary ? el("span", { class: "t-footnote secondary", text: recipe.summary }) : null,
+      meta.length ? el("div", { class: "card__meta" }, meta) : null
+    ]),
+    el("a", { class: "card__link", href: "#/recipe/" + recipe.id, "aria-label": recipe.title })
+  ]);
+}
+
+function openSortSheet() {
+  openSheet({
+    title: "Sort recipes",
+    body: el("div", { class: "list" }, SORTS.map(function (option) {
+      const active = state.filters.sort === option.id;
+      return el("button", { class: "row", type: "button", onclick: function () {
+        state.filters.sort = option.id;
+        closeSheet();
+        render();
+      } }, [
+        el("span", { class: "row__text" }, el("span", { class: "row__title", text: option.label })),
+        active ? icon("check") : null
+      ]);
+    }))
+  });
+}
+
+VIEWS.library = async function (main) {
+  setTopbar({
+    title: "Recipes",
+    trailing: [
+      el("button", { class: "iconbtn", type: "button", "aria-label": "Sort recipes", onclick: openSortSheet },
+        icon("sort")),
+      el("button", { class: "iconbtn", type: "button", "aria-label": "Add a recipe",
+                     onclick: openImportSheet }, icon("plus"))
+    ]
+  });
+
+  if (!state.loaded) {
+    setContent(main, el("div", { class: "wrap" }, loadingView()));
+    await refreshRecipes();
+  }
+
+  const wrap = el("div", { class: "wrap wrap--wide" });
+  wrap.appendChild(el("h2", { class: "largetitle", text: "Recipes" }));
+
+  const searchInput = el("input", {
+    type: "search", value: state.filters.q, placeholder: "Search recipes and ingredients",
+    "aria-label": "Search recipes and ingredients", enterkeyhint: "search"
+  });
+  let debounce = null;
+  searchInput.addEventListener("input", function () {
+    clearTimeout(debounce);
+    debounce = setTimeout(function () {
+      state.filters.q = searchInput.value.trim();
+      paint();
+      if (document.activeElement !== searchInput) searchInput.focus();
+    }, 160);
+  });
+  wrap.appendChild(el("div", { class: "search", style: "margin-bottom:12px" },
+    [icon("search"), searchInput]));
+
+  const chipRow = el("div", { class: "chips", role: "group", "aria-label": "Filter recipes" });
+  wrap.appendChild(chipRow);
+
+  const results = el("div", { style: "margin-top:20px" });
+  wrap.appendChild(results);
+  setContent(main, wrap);
+
+  function paint() {
+    const chips = [
+      el("button", {
+        class: "chip", type: "button", "aria-pressed": String(!state.filters.favorite && !state.filters.tag),
+        onclick: function () { state.filters.favorite = false; state.filters.tag = ""; paint(); }
+      }, "All"),
+      el("button", {
+        class: "chip", type: "button", "aria-pressed": String(state.filters.favorite),
+        onclick: function () { state.filters.favorite = !state.filters.favorite; paint(); }
+      }, [icon("heart", state.filters.favorite ? "icon--filled" : null), "Favourites"])
+    ].concat(allTags().map(function (tag) {
+      return el("button", {
+        class: "chip", type: "button", "aria-pressed": String(state.filters.tag === tag),
+        onclick: function () { state.filters.tag = state.filters.tag === tag ? "" : tag; paint(); }
+      }, tag);
+    }));
+    setContent(chipRow, chips);
+
+    const list = sortedRecipes(state.recipes.filter(matchesFilters));
+    if (!list.length) {
+      setContent(results, emptyLibrary());
+      return;
+    }
+    setContent(results, [
+      el("p", { class: "t-footnote secondary", style: "margin-bottom:12px",
+                text: plural(list.length, "recipe", "recipes") }),
+      el("div", { class: "cards" }, list.map(recipeCard))
+    ]);
+  }
+
+  paint();
+};
+
+function emptyLibrary() {
+  const filtering = state.filters.q || state.filters.tag || state.filters.favorite;
+  if (filtering) {
+    return el("div", { class: "empty" }, [
+      icon("search"),
+      el("p", { class: "empty__title", text: "No matches" }),
+      el("p", { class: "empty__body", text: "Try a different word, or clear the filters." }),
+      el("button", { class: "btn btn--tinted", type: "button", text: "Clear filters", onclick: function () {
+        state.filters = { q: "", tag: "", favorite: false, sort: state.filters.sort };
+        render();
+      } })
+    ]);
+  }
+  return el("div", { class: "empty" }, [
+    icon("book"),
+    el("p", { class: "empty__title", text: "No recipes yet" }),
+    el("p", { class: "empty__body",
+              text: "Paste a link to a recipe page and it comes in whole \u2014 ingredients, " +
+                    "method and photo \u2014 ready to edit. Or write one yourself." }),
+    el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;justify-content:center" }, [
+      el("button", { class: "btn btn--filled", type: "button", onclick: openImportSheet },
+        [icon("import"), "Import from a link"]),
+      el("a", { class: "btn btn--tinted", href: "#/new" }, [icon("pencil"), "Write one"])
+    ])
+  ]);
+}
+</script>
+<script>
+/* ==========================================================================
+   Recipe detail
+   ========================================================================== */
+"use strict";
+
+const capitalise = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; };
+
+function ingredientLine(ing, scale) {
+  const amount = ing.amount ? formatAmount(ing.amount * scale) : "";
+  const rest = [ing.unit, ing.item].filter(Boolean).join(" ");
+  return { amount: amount, text: rest, full: [amount, rest].filter(Boolean).join(" ") };
+}
+
+function checkedSet(recipeId) {
+  if (!state.checked[recipeId]) state.checked[recipeId] = {};
+  return state.checked[recipeId];
+}
+
+function ingredientList(recipe, scale) {
+  const ticked = checkedSet(recipe.id);
+  const nodes = [];
+  let lastGroup = null;
+  (recipe.ingredients || []).forEach(function (ing, index) {
+    if (ing.group && ing.group !== lastGroup) {
+      nodes.push(el("p", { class: "ing__group", text: ing.group }));
+      lastGroup = ing.group;
+    }
+    const line = ingredientLine(ing, scale);
+    nodes.push(el("button", {
+      class: "ing", type: "button", "aria-pressed": String(!!ticked[index]),
+      onclick: function (event) {
+        ticked[index] = !ticked[index];
+        event.currentTarget.setAttribute("aria-pressed", String(!!ticked[index]));
+        writeStore(CHECKED_KEY, state.checked);
+        haptic();
+      }
+    }, [
+      el("span", { class: "ing__check" }, icon("check")),
+      el("span", { class: "ing__text" }, [
+        line.amount ? el("span", { class: "ing__amount", text: line.amount + " " }) : null,
+        el("span", { text: line.text }),
+        ing.note ? el("span", { class: "t-footnote secondary", text: " \u00B7 " + ing.note }) : null
+      ])
+    ]));
+  });
+  return nodes;
+}
+
+function recipePayload(recipe) {
+  return {
+    title: recipe.title, summary: recipe.summary, category: recipe.category, cuisine: recipe.cuisine,
+    tags: recipe.tags || [], servings: recipe.servings, prep_minutes: recipe.prep_minutes,
+    cook_minutes: recipe.cook_minutes, difficulty: recipe.difficulty, photo_id: recipe.photo_id,
+    ingredients: recipe.ingredients || [], steps: recipe.steps || [], notes: recipe.notes,
+    source: recipe.source, favorite: !!recipe.favorite
+  };
+}
+
+async function toggleFavorite(recipe) {
+  const next = Object.assign({}, recipe, { favorite: !recipe.favorite });
+  const saved = await api("api/recipes/" + recipe.id, { method: "PUT", body: recipePayload(next) });
+  Object.assign(recipe, saved);
+  return saved;
+}
+
+async function addRecipeToShopping(recipe, scale) {
+  const lines = (recipe.ingredients || []).map(function (ing) {
+    return ingredientLine(ing, scale).full;
+  }).filter(Boolean);
+  for (let i = 0; i < lines.length; i++) {
+    await api("api/shopping", { method: "POST", body: { text: lines[i], recipe: recipe.title } });
+  }
+  await refreshShopping();
+  toast(plural(lines.length, "item", "items") + " added to the shopping list", "ok");
+}
+</script>
+<script>
+"use strict";
+
+VIEWS.recipe = async function (main, params) {
+  if (!state.loaded) {
+    setContent(main, el("div", { class: "wrap" }, loadingView()));
+    await refreshRecipes();
+  }
+  let recipe = findRecipe(params.id);
+  if (!recipe) recipe = await api("api/recipes/" + params.id);
+
+  const baseServings = recipe.servings || 1;
+  let servings = baseServings;
+
+  const favButton = el("button", {
+    class: "iconbtn", type: "button", "aria-pressed": String(!!recipe.favorite),
+    "aria-label": recipe.favorite ? "Remove from favourites" : "Add to favourites",
+    onclick: async function () {
+      try {
+        await toggleFavorite(recipe);
+        setContent(favButton, icon("heart", recipe.favorite ? "icon--filled" : null));
+        favButton.setAttribute("aria-pressed", String(!!recipe.favorite));
+        favButton.setAttribute("aria-label",
+          recipe.favorite ? "Remove from favourites" : "Add to favourites");
+        haptic();
+      } catch (err) { reportError(err); }
+    }
+  }, icon("heart", recipe.favorite ? "icon--filled" : null));
+
+  setTopbar({
+    title: recipe.title,
+    leading: backButton("#/recipes", "Back to recipes"),
+    trailing: [
+      favButton,
+      el("a", { class: "iconbtn", href: "#/edit/" + recipe.id, "aria-label": "Edit recipe" }, icon("pencil"))
+    ]
+  });
+
+  const wrap = el("div", { class: "wrap" });
+
+  wrap.appendChild(el("div", { class: "hero" },
+    el("div", { class: "hero__media" }, recipe.photo_id
+      ? el("img", { src: photoUrl(recipe.photo_id), alt: "Photo of " + recipe.title })
+      : el("div", { class: "placeholder" }, icon("photo")))));
+
+  wrap.appendChild(el("h2", { class: "t-largetitle", text: recipe.title }));
+  if (recipe.summary) {
+    wrap.appendChild(el("p", { class: "t-callout secondary", style: "margin-top:8px", text: recipe.summary }));
+  }
+
+  const badges = [];
+  if (recipe.prep_minutes) {
+    badges.push(el("span", { class: "badge" }, [icon("clock"), "Prep " + formatMinutes(recipe.prep_minutes)]));
+  }
+  if (recipe.cook_minutes) {
+    badges.push(el("span", { class: "badge" }, [icon("flame"), "Cook " + formatMinutes(recipe.cook_minutes)]));
+  }
+  if (recipe.difficulty) badges.push(el("span", { class: "badge", text: capitalise(recipe.difficulty) }));
+  if (recipe.cuisine) badges.push(el("span", { class: "badge", text: recipe.cuisine }));
+  if (recipe.cooked_count) {
+    badges.push(el("span", { class: "badge badge--tint" },
+      [icon("flame"), "Cooked " + plural(recipe.cooked_count, "time", "times")]));
+  }
+  if (badges.length) wrap.appendChild(el("div", { class: "meta-row" }, badges));
+
+  const amountsHost = el("div", { class: "list" });
+  const unitLabel = el("span", { class: "t-footnote secondary", text: "servings" });
+  const repaint = function () {
+    setContent(amountsHost, ingredientList(recipe, servings / baseServings));
+    unitLabel.textContent = servings === 1 ? "serving" : "servings";
+  };
+  const servingsValue = el("span", {
+    class: "stepper__value", text: String(servings), "aria-live": "polite",
+    "aria-label": String(servings) + " servings"
+  });
+  const bump = function (delta) {
+    const next = Math.min(99, Math.max(1, servings + delta));
+    if (next === servings) return;
+    servings = next;
+    servingsValue.textContent = String(servings);
+    servingsValue.setAttribute("aria-label", String(servings) + " servings");
+    repaint();
+  };
+
+  wrap.appendChild(el("section", { class: "group" }, [
+    el("div", { style: "display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px" }, [
+      el("h3", { class: "t-title3", text: "Ingredients", style: "flex:1;min-width:8rem" }),
+      el("div", { class: "stepper" }, [
+        el("button", { type: "button", "aria-label": "Fewer servings",
+                       onclick: function () { bump(-1); } },
+          el("span", { text: "\u2212", "aria-hidden": "true", style: "font-size:1.25rem;font-weight:600" })),
+        servingsValue,
+        el("button", { type: "button", "aria-label": "More servings",
+                       onclick: function () { bump(1); } },
+          el("span", { text: "+", "aria-hidden": "true", style: "font-size:1.25rem;font-weight:600" }))
+      ]),
+      unitLabel
+    ]),
+    amountsHost,
+    el("button", { class: "btn btn--tinted", style: "margin-top:12px", type: "button",
+      onclick: async function () {
+        try { await addRecipeToShopping(recipe, servings / baseServings); }
+        catch (err) { reportError(err); }
+      } }, [icon("cart"), "Add to shopping list"])
+  ]));
+  repaint();
+
+  if ((recipe.steps || []).length) {
+    wrap.appendChild(el("section", { class: "group" }, [
+      el("h3", { class: "t-title3", style: "margin-bottom:12px", text: "Method" }),
+      el("div", { class: "list" }, recipe.steps.map(function (step, index) {
+        return el("div", { class: "step" }, [
+          el("span", { class: "step__no", text: String(index + 1) }),
+          el("div", { class: "step__body" }, [
+            el("p", { text: step.text }),
+            step.photo_id ? el("img", {
+              src: photoUrl(step.photo_id), alt: "", loading: "lazy",
+              style: "border-radius:12px;max-height:14rem;object-fit:cover;width:100%"
+            }) : null,
+            step.seconds ? el("button", {
+              class: "btn btn--tinted", type: "button",
+              onclick: function () {
+                addTimer({
+                  label: recipe.title + " \u00B7 step " + (index + 1),
+                  seconds: step.seconds, recipeId: recipe.id, stepIndex: index
+                });
+                toast("Timer started for " + formatClock(step.seconds), "ok");
+              }
+            }, [icon("timer"), "Start " + formatClock(step.seconds)]) : null
+          ])
+        ]);
+      }))
+    ]));
+  }
+
+  if (recipe.notes) {
+    wrap.appendChild(el("section", { class: "group" }, [
+      el("h3", { class: "t-title3", style: "margin-bottom:12px", text: "Notes" }),
+      el("div", { class: "list" },
+        el("p", { style: "padding:16px;white-space:pre-wrap", text: recipe.notes }))
+    ]));
+  }
+
+  const footer = [];
+  if (recipe.source) {
+    footer.push(el("p", { class: "t-footnote secondary" }, [
+      "Source: ",
+      /^https?:\/\//.test(recipe.source)
+        ? el("a", { href: recipe.source, target: "_blank", rel: "noopener noreferrer", text: recipe.source })
+        : recipe.source
+    ]));
+  }
+  if (recipe.last_cooked_at) {
+    footer.push(el("p", { class: "t-footnote secondary",
+                          text: "Last cooked " + formatDate(recipe.last_cooked_at) }));
+  }
+  footer.push(el("button", {
+    class: "btn btn--gray", type: "button", style: "margin-top:8px",
+    onclick: async function () {
+      const copy = recipePayload(recipe);
+      copy.title = recipe.title + " (copy)";
+      copy.favorite = false;
+      try {
+        const made = await api("api/recipes", { method: "POST", body: copy });
+        state.recipes.unshift(made);
+        toast("Duplicated \u2014 edit the copy", "ok");
+        go("#/edit/" + made.id);
+      } catch (err) { reportError(err); }
+    }
+  }, [icon("export"), "Duplicate"]));
+  footer.push(el("button", {
+    class: "btn btn--danger", type: "button", style: "margin-top:8px",
+    onclick: async function () {
+      const ok = await confirmAction({
+        title: "Delete this recipe?",
+        message: recipe.title + " will be removed permanently. This cannot be undone.",
+        confirmLabel: "Delete recipe", destructive: true
+      });
+      if (!ok) return;
+      const restore = recipePayload(recipe);
+      try {
+        await api("api/recipes/" + recipe.id, { method: "DELETE" });
+        state.recipes = state.recipes.filter(function (r) { return r.id !== recipe.id; });
+        go("#/recipes");
+        toast("Deleted " + recipe.title, "ok", {
+          label: "Undo",
+          onAction: async function () {
+            try {
+              const back = await api("api/recipes", { method: "POST", body: restore });
+              state.recipes.unshift(back);
+              toast("Restored", "ok");
+              go("#/recipe/" + back.id);
+            } catch (err) { reportError(err); }
+          }
+        });
+      } catch (err) { reportError(err); }
+    }
+  }, [icon("trash"), "Delete recipe"]));
+  wrap.appendChild(el("section", { class: "group" }, footer));
+
+  wrap.appendChild(el("div", { style: "height:76px" }));
+  setContent(main, wrap);
+
+  // The primary action of the screen, and the only tinted fill on it.
+  main.appendChild(el("a", {
+    class: "btn btn--filled btn--large", href: "#/cook/" + recipe.id,
+    style: "position:fixed;left:50%;transform:translateX(-50%);z-index:50;" +
+           "bottom:calc(var(--tabbar-h) + var(--safe-b) + 16px);" +
+           "width:min(24rem,calc(100vw - 2rem));box-shadow:0 6px 24px rgba(0,0,0,.28)"
+  }, [icon("play"), "Start cooking"]));
+};
+</script>
+<script>
+/* ==========================================================================
+   Photo picker
+   Three ways to get a picture: a file from the device, the camera, or a
+   search across free photo sources. Whatever is chosen is copied to this
+   server, so a recipe never depends on someone else's URL staying up.
+   ========================================================================== */
+"use strict";
+
+async function uploadFile(file) {
+  if (!file) return null;
+  const form = new FormData();
+  form.append("file", file);
+  return api("api/photos", { method: "POST", body: form });
+}
+
+function pickPhoto(suggestedQuery) {
+  return new Promise(function (resolve) {
+    let settled = false;
+    const finish = function (value) {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+      closeSheet();
+    };
+
+    const panel = el("div", { style: "min-height:16rem" });
+    const busy = function (message) {
+      setContent(panel, el("div", { class: "loading" },
+        [el("div", { class: "spinner" }), el("span", { text: message })]));
+    };
+
+    const fileInput = el("input", { type: "file", accept: "image/*", class: "visually-hidden",
+      onchange: async function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        busy("Uploading");
+        try { finish(await uploadFile(file)); }
+        catch (err) { reportError(err); showTab("device"); }
+      } });
+    const cameraInput = el("input", { type: "file", accept: "image/*", capture: "environment",
+      class: "visually-hidden",
+      onchange: async function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        busy("Uploading");
+        try { finish(await uploadFile(file)); }
+        catch (err) { reportError(err); showTab("device"); }
+      } });
+
+    let searchTimer = null;
+    const searchField = el("input", {
+      type: "search", placeholder: "Search for a photo", value: suggestedQuery || "",
+      "aria-label": "Search for a photo", enterkeyhint: "search"
+    });
+
+    async function runSearch() {
+      const q = searchField.value.trim();
+      if (q.length < 2) {
+        setContent(resultsHost, el("p", { class: "t-footnote secondary", style: "padding:16px 0",
+          text: "Type at least two letters to search." }));
+        return;
+      }
+      setContent(resultsHost, el("div", { class: "loading" },
+        [el("div", { class: "spinner" }), el("span", { text: "Searching" })]));
+      try {
+        const data = await api("api/photos/search?q=" + encodeURIComponent(q));
+        if (!data.results.length) {
+          setContent(resultsHost, el("div", { class: "empty" }, [
+            icon("photo"),
+            el("p", { class: "empty__title", text: "Nothing found" }),
+            el("p", { class: "empty__body", text: "Try a simpler word, like the main ingredient." })
+          ]));
+          return;
+        }
+        setContent(resultsHost, [
+          el("div", { class: "photo-grid" }, data.results.map(function (item) {
+            return el("button", {
+              type: "button", title: item.attribution || item.title,
+              "aria-label": "Use photo: " + (item.title || "untitled") +
+                            (item.author ? ", by " + item.author : ""),
+              onclick: async function () {
+                busy("Saving photo");
+                try {
+                  finish(await api("api/photos/import", { method: "POST", body: {
+                    url: item.url, attribution: item.attribution, link: item.link, source: item.provider
+                  } }));
+                } catch (err) { reportError(err); showTab("search"); }
+              }
+            }, [
+              el("img", { src: item.thumb, alt: "", loading: "lazy", decoding: "async" }),
+              el("figcaption", { text: item.author ? item.author + " \u00B7 " + item.provider : item.provider })
+            ]);
+          })),
+          el("p", { class: "t-caption secondary", style: "margin-top:12px" },
+            "Photos come from Openverse, Wikimedia Commons and TheMealDB. The credit line is " +
+            "stored with the picture." ),
+          data.unavailable && data.unavailable.length
+            ? el("p", { class: "t-caption secondary", style: "margin-top:4px",
+                        text: "Unavailable right now: " + data.unavailable.join(", ") })
+            : null
+        ]);
+      } catch (err) {
+        setContent(resultsHost, el("div", { class: "empty" }, [
+          icon("warn"),
+          el("p", { class: "empty__title", text: "Search is unavailable" }),
+          el("p", { class: "empty__body", text: err.message })
+        ]));
+      }
+    }
+
+    searchField.addEventListener("input", function () {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearch, 420);
+    });
+    const resultsHost = el("div", { style: "margin-top:12px" });
+    const searchBar = el("div", { class: "search" }, [icon("search"), searchField]);
+
+    function showTab(which) {
+      Array.prototype.forEach.call(segmented.children, function (button) {
+        button.setAttribute("aria-pressed", String(button.dataset.tab === which));
+      });
+      if (which === "search") {
+        setContent(panel, [searchBar, resultsHost]);
+        setTimeout(function () { searchField.focus(); }, 40);
+        if (searchField.value.trim().length >= 2 && !resultsHost.firstChild) runSearch();
+        return;
+      }
+      const isCamera = which === "camera";
+      setContent(panel, el("div", { class: "empty" }, [
+        icon(isCamera ? "camera" : "photo"),
+        el("p", { class: "empty__title", text: isCamera ? "Take a photo" : "Choose a photo" }),
+        el("p", { class: "empty__body", text: isCamera
+          ? "Opens the camera on a phone or tablet."
+          : "Pick a picture already on this device." }),
+        el("button", { class: "btn btn--filled", type: "button",
+          onclick: function () { (isCamera ? cameraInput : fileInput).click(); } },
+          [icon(isCamera ? "camera" : "photo"), isCamera ? "Open camera" : "Choose file"])
+      ]));
+    }
+
+    const segmented = el("div", { class: "segmented", role: "group", "aria-label": "Photo source" }, [
+      el("button", { type: "button", dataset: { tab: "device" }, text: "Device",
+                     onclick: function () { showTab("device"); } }),
+      el("button", { type: "button", dataset: { tab: "camera" }, text: "Camera",
+                     onclick: function () { showTab("camera"); } }),
+      el("button", { type: "button", dataset: { tab: "search" }, text: "Search",
+                     onclick: function () { showTab("search"); } })
+    ]);
+
+    openSheet({
+      title: "Add a photo",
+      onClose: function () { finish(null); },
+      body: [segmented, fileInput, cameraInput, panel]
+    });
+    showTab(suggestedQuery ? "search" : "device");
+  });
+}
+</script>
+<script>
+/* ==========================================================================
+   Starting a recipe from a draft
+   ========================================================================== */
+"use strict";
+
+function openImportSheet() {
+  const resultsHost = el("div", { style: "margin-top:12px" });
+  const field = el("input", {
+    type: "search", placeholder: "Search by dish name", "aria-label": "Search by dish name",
+    enterkeyhint: "search"
+  });
+  let debounceId = null;
+
+  async function search() {
+    const q = field.value.trim();
+    if (q.length < 2) { clear(resultsHost); return; }
+    setContent(resultsHost, el("div", { class: "loading" },
+      [el("div", { class: "spinner" }), el("span", { text: "Searching" })]));
+    try {
+      const data = await api("api/import/search?q=" + encodeURIComponent(q));
+      if (!data.results.length) {
+        setContent(resultsHost, el("div", { class: "empty" }, [
+          icon("search"),
+          el("p", { class: "empty__title", text: "Nothing found" }),
+          el("p", { class: "empty__body", text: "Try the dish name on its own, such as goulash." })
+        ]));
+        return;
+      }
+      setContent(resultsHost, el("div", { class: "list" }, data.results.map(function (item) {
+        return el("button", { class: "row", type: "button", onclick: function () { runImport(item); } }, [
+          el("img", { src: item.thumb, alt: "", loading: "lazy",
+                      style: "width:56px;height:56px;border-radius:10px;object-fit:cover;flex:0 0 auto" }),
+          el("span", { class: "row__text" }, [
+            el("span", { class: "row__title", text: item.title }),
+            el("span", { class: "row__sub",
+                         text: [item.cuisine, item.category].filter(Boolean).join(" \u00B7 ") })
+          ]),
+          icon("fwd", "row__chevron")
+        ]);
+      })));
+    } catch (err) {
+      setContent(resultsHost, el("div", { class: "empty" }, [
+        icon("warn"),
+        el("p", { class: "empty__title", text: "Search is unavailable" }),
+        el("p", { class: "empty__body", text: err.message })
+      ]));
+    }
+  }
+
+  async function runImport(item) {
+    setContent(resultsHost, el("div", { class: "loading" },
+      [el("div", { class: "spinner" }), el("span", { text: "Importing " + item.title })]));
+    try {
+      const recipe = await api("api/import/mealdb/" + item.id, { method: "POST" });
+      state.recipes.unshift(recipe);
+      closeSheet();
+      toast("Imported. Check it over and make it yours.", "ok");
+      go("#/edit/" + recipe.id);
+    } catch (err) {
+      reportError(err);
+      search();
+    }
+  }
+
+  field.addEventListener("input", function () {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(search, 420);
+  });
+
+  /* Importing from a link is the way most recipes actually arrive, so it
+     leads; the recipe database is the fallback for when there is no link. */
+  const linkField = el("input", {
+    class: "field", type: "url", inputmode: "url", placeholder: "https://...",
+    "aria-label": "Address of the recipe page", enterkeyhint: "go"
+  });
+  const linkStatus = el("div", { style: "margin-top:12px" });
+
+  async function importLink() {
+    const url = linkField.value.trim();
+    if (!url) { toast("Paste a link first", "error"); linkField.focus(); return; }
+    setContent(linkStatus, el("div", { class: "loading" },
+      [el("div", { class: "spinner" }), el("span", { text: "Reading the page" })]));
+    try {
+      const recipe = await api("api/import/url", { method: "POST", body: { url: url } });
+      state.recipes.unshift(recipe);
+      closeSheet();
+      toast("Imported. Check it over and make it yours.", "ok");
+      go("#/edit/" + recipe.id);
+    } catch (err) {
+      setContent(linkStatus, el("div", { class: "empty" }, [
+        icon("warn"),
+        el("p", { class: "empty__title", text: "Could not import that" }),
+        el("p", { class: "empty__body", text: err.message })
+      ]));
+    }
+  }
+
+  linkField.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") { event.preventDefault(); importLink(); }
+  });
+
+  const linkPanel = el("div", null, [
+    el("p", { class: "t-footnote secondary", style: "padding:0 0 12px" },
+      "Paste the address of a recipe page. Most recipe sites publish their " +
+      "ingredients and method in a form this can read, photo included."),
+    linkField,
+    el("button", { class: "btn btn--filled btn--block", style: "margin-top:12px",
+                   type: "button", onclick: importLink }, [icon("import"), "Import"]),
+    linkStatus
+  ]);
+
+  const searchPanel = el("div", null, [
+    el("p", { class: "t-footnote secondary", style: "padding:0 0 12px" },
+      "Search a free recipe database and pull one in to edit. Nothing is published back."),
+    el("div", { class: "search" }, [icon("search"), field]),
+    resultsHost
+  ]);
+
+  const panel = el("div", { style: "min-height:12rem" });
+  const tabs = el("div", { class: "segmented", role: "group", "aria-label": "Where to import from" }, [
+    el("button", { type: "button", text: "From a link", dataset: { tab: "link" },
+                   onclick: function () { showPanel("link"); } }),
+    el("button", { type: "button", text: "Search", dataset: { tab: "search" },
+                   onclick: function () { showPanel("search"); } })
+  ]);
+
+  function showPanel(which) {
+    Array.prototype.forEach.call(tabs.children, function (button) {
+      button.setAttribute("aria-pressed", String(button.dataset.tab === which));
+    });
+    setContent(panel, which === "link" ? linkPanel : searchPanel);
+    setTimeout(function () { (which === "link" ? linkField : field).focus(); }, 60);
+  }
+
+  openSheet({
+    title: "Add a recipe",
+    body: [tabs, panel],
+    footer: el("button", { class: "btn btn--gray btn--block", type: "button",
+      onclick: function () { closeSheet(); go("#/new"); } },
+      [icon("pencil"), "Write one from scratch"])
+  });
+  showPanel("link");
+}
+
+/* Paste a block of text and get one line per ingredient or step, so a recipe
+   copied from a message or a website does not have to be retyped. */
+function openPasteSheet(kind, onParsed) {
+  const area = el("textarea", {
+    class: "field", rows: "10",
+    placeholder: kind === "ingredients"
+      ? "200 g spaghetti\n100 g pancetta\n2 eggs"
+      : "Boil the water.\nFry the pancetta for 5 minutes.\nMix and serve."
+  });
+  openSheet({
+    title: kind === "ingredients" ? "Paste ingredients" : "Paste method",
+    body: [
+      el("p", { class: "t-footnote secondary", style: "padding:0 0 12px",
+                text: "One per line. Amounts and units are picked out automatically." }),
+      area
+    ],
+    footer: el("button", { class: "btn btn--filled btn--block", type: "button", text: "Add lines",
+      onclick: function () {
+        const lines = area.value.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+        closeSheet();
+        if (lines.length) onParsed(lines);
+      } })
+  });
+  setTimeout(function () { area.focus(); }, 60);
+}
+
+const UNITS = ["g", "kg", "ml", "l", "dl", "tsp", "tbsp", "cup", "cups", "clove", "cloves",
+               "slice", "slices", "pinch", "can", "cans", "tin", "tins", "pack", "packs", "piece", "pieces"];
+
+// "200 g spaghetti" -> { amount: 200, unit: "g", item: "spaghetti" }
+function parseIngredientLine(line) {
+  const match = line.match(/^\s*(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?)\s*(.*)$/);
+  if (!match) return { amount: null, unit: "", item: line, note: "", group: "" };
+  let amount = null;
+  const raw = match[1].replace(",", ".");
+  if (raw.indexOf("/") >= 0) {
+    const bits = raw.split("/");
+    amount = parseFloat(bits[0]) / parseFloat(bits[1]);
+  } else {
+    amount = parseFloat(raw);
+  }
+  let rest = match[2].trim();
+  let unit = "";
+  const firstWord = rest.split(/\s+/)[0] || "";
+  if (UNITS.indexOf(firstWord.toLowerCase().replace(/\.$/, "")) >= 0) {
+    unit = firstWord.replace(/\.$/, "");
+    rest = rest.slice(firstWord.length).trim();
+  }
+  return { amount: isNaN(amount) ? null : Math.round(amount * 1000) / 1000,
+           unit: unit, item: rest, note: "", group: "" };
+}
+
+// Mirrors the server-side detection so a pasted step gets its timer too.
+function detectSeconds(text) {
+  const match = text.match(/(\d+)\s*(?:-|to|\u2013)?\s*(\d+)?\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)\b/i);
+  if (!match) return 0;
+  const value = parseInt(match[2] || match[1], 10);
+  const unit = match[3].toLowerCase();
+  if (unit.charAt(0) === "h") return value * 3600;
+  if (unit.charAt(0) === "m") return value * 60;
+  return value;
+}
+</script>
+<script>
+/* ==========================================================================
+   Editor
+   ========================================================================== */
+"use strict";
+
+const DIFFICULTIES = ["easy", "medium", "hard"];
+
+function blankRecipe() {
+  return {
+    id: null, title: "", summary: "", category: "", cuisine: "", tags: [], servings: 2,
+    prep_minutes: 0, cook_minutes: 0, difficulty: "easy", photo_id: null,
+    ingredients: [{ amount: null, unit: "", item: "", note: "", group: "" }],
+    steps: [{ text: "", seconds: 0, photo_id: null }],
+    notes: "", source: "", favorite: false
+  };
+}
+
+VIEWS.editor = async function (main, params) {
+  let draft;
+  if (params.id) {
+    if (!state.loaded) await refreshRecipes();
+    const existing = findRecipe(params.id) || await api("api/recipes/" + params.id);
+    draft = JSON.parse(JSON.stringify(existing));
+    if (!draft.ingredients.length) {
+      draft.ingredients = [{ amount: null, unit: "", item: "", note: "", group: "" }];
+    }
+    if (!draft.steps.length) draft.steps = [{ text: "", seconds: 0, photo_id: null }];
+  } else {
+    draft = blankRecipe();
+  }
+
+  let dirty = false;
+  const touch = function () { dirty = true; };
+  const backHref = params.id ? "#/recipe/" + params.id : "#/recipes";
+  navGuard = { isDirty: function () { return dirty; }, hash: location.hash };
+
+  async function leave() {
+    if (!dirty) { go(backHref); return; }
+    const ok = await confirmAction({
+      title: "Discard changes?",
+      message: "The edits you made to this recipe will not be saved.",
+      confirmLabel: "Discard", destructive: true
+    });
+    if (ok) { dirty = false; navGuard = null; go(backHref); }
+  }
+
+  async function save() {
+    const title = draft.title.trim();
+    if (!title) {
+      toast("Give the recipe a name first", "error");
+      const field = $("#editTitle");
+      if (field) field.focus();
+      return;
+    }
+    draft.title = title;
+    draft.ingredients = draft.ingredients.filter(function (i) { return (i.item || "").trim(); });
+    draft.steps = draft.steps.filter(function (s) { return (s.text || "").trim(); });
+    saveButton.disabled = true;
+    try {
+      const saved = params.id
+        ? await api("api/recipes/" + params.id, { method: "PUT", body: recipePayload(draft) })
+        : await api("api/recipes", { method: "POST", body: recipePayload(draft) });
+      const index = state.recipes.findIndex(function (r) { return r.id === saved.id; });
+      if (index >= 0) state.recipes[index] = saved; else state.recipes.unshift(saved);
+      dirty = false;
+      navGuard = null;
+      toast("Saved", "ok");
+      go("#/recipe/" + saved.id);
+    } catch (err) {
+      reportError(err);
+      saveButton.disabled = false;
+    }
+  }
+
+  const saveButton = el("button", { class: "btn btn--plain", type: "button", text: "Save",
+                                    style: "font-weight:700", onclick: save });
+
+  setTopbar({
+    title: params.id ? "Edit recipe" : "New recipe",
+    leading: el("button", { class: "btn btn--plain", type: "button", text: "Cancel", onclick: leave }),
+    trailing: saveButton
+  });
+
+  const wrap = el("div", { class: "wrap" });
+  wrap.appendChild(el("h2", { class: "largetitle", text: params.id ? "Edit recipe" : "New recipe" }));
+
+  const photoHost = el("div", { class: "group" });
+  function paintPhoto() {
+    setContent(photoHost, el("div", { class: "photo-slot" }, [
+      draft.photo_id
+        ? el("img", { src: photoUrl(draft.photo_id), alt: "Selected photo" })
+        : el("div", { style: "text-align:center;padding:16px;color:var(--label-secondary)" }, [
+            icon("photo"),
+            el("p", { class: "t-footnote", style: "margin-top:8px", text: "No photo yet" })
+          ]),
+      el("div", { class: "photo-slot__actions" }, [
+        draft.photo_id ? el("button", {
+          class: "photo-slot__btn", type: "button",
+          onclick: function () { draft.photo_id = null; touch(); paintPhoto(); }
+        }, [icon("trash"), "Remove"]) : null,
+        el("button", {
+          class: "photo-slot__btn", type: "button",
+          onclick: async function () {
+            const photo = await pickPhoto(draft.title.trim());
+            if (!photo) return;
+            draft.photo_id = photo.id;
+            touch();
+            paintPhoto();
+          }
+        }, [icon("camera"), draft.photo_id ? "Replace" : "Add photo"])
+      ])
+    ]));
+  }
+  paintPhoto();
+  wrap.appendChild(photoHost);
+
+  const bind = function (node, key, transform) {
+    node.addEventListener("input", function () {
+      draft[key] = transform ? transform(node.value) : node.value;
+      touch();
+    });
+    return node;
+  };
+  const num = function (v) { const n = parseInt(v, 10); return isNaN(n) ? 0 : Math.max(0, n); };
+
+  const titleField = bind(el("input", { class: "field", id: "editTitle", value: draft.title,
+    placeholder: "Spaghetti alla carbonara", "aria-label": "Recipe name" }), "title");
+  const summaryField = bind(el("input", { class: "field", value: draft.summary,
+    placeholder: "One line about it", "aria-label": "Short description" }), "summary");
+
+  const difficultyGroup = el("div", { class: "segmented", role: "group", "aria-label": "Difficulty" },
+    DIFFICULTIES.map(function (level) {
+      return el("button", { type: "button", text: capitalise(level), dataset: { level: level },
+        "aria-pressed": String(draft.difficulty === level),
+        onclick: function (event) {
+          draft.difficulty = level;
+          touch();
+          Array.prototype.forEach.call(event.currentTarget.parentNode.children, function (b) {
+            b.setAttribute("aria-pressed", String(b.dataset.level === level));
+          });
+        } });
+    }));
+
+  wrap.appendChild(el("section", { class: "group" }, [
+    el("div", { class: "group__header", text: "Basics" }),
+    el("div", { class: "stack" }, [
+      el("div", null, [el("label", { class: "label", for: "editTitle", text: "Name" }), titleField]),
+      el("div", null, [el("span", { class: "label", text: "Description" }), summaryField]),
+      el("div", { class: "field-row" }, [
+        el("div", null, [el("span", { class: "label", text: "Servings" }),
+          bind(el("input", { class: "field", type: "number", min: "1", max: "99", inputmode: "numeric",
+            value: String(draft.servings), "aria-label": "Servings" }), "servings", num)]),
+        el("div", null, [el("span", { class: "label", text: "Prep (min)" }),
+          bind(el("input", { class: "field", type: "number", min: "0", inputmode: "numeric",
+            value: String(draft.prep_minutes), "aria-label": "Preparation time in minutes" }),
+            "prep_minutes", num)]),
+        el("div", null, [el("span", { class: "label", text: "Cook (min)" }),
+          bind(el("input", { class: "field", type: "number", min: "0", inputmode: "numeric",
+            value: String(draft.cook_minutes), "aria-label": "Cooking time in minutes" }),
+            "cook_minutes", num)])
+      ]),
+      el("div", { class: "field-row" }, [
+        el("div", null, [el("span", { class: "label", text: "Category" }),
+          bind(el("input", { class: "field", value: draft.category, placeholder: "Dinner",
+                             "aria-label": "Category" }), "category")]),
+        el("div", null, [el("span", { class: "label", text: "Cuisine" }),
+          bind(el("input", { class: "field", value: draft.cuisine, placeholder: "Italian",
+                             "aria-label": "Cuisine" }), "cuisine")])
+      ]),
+      el("div", null, [el("span", { class: "label", text: "Difficulty" }), difficultyGroup]),
+      el("div", null, [
+        el("span", { class: "label", text: "Tags" }),
+        bind(el("input", { class: "field", value: (draft.tags || []).join(", "),
+          placeholder: "quick, vegetarian", "aria-label": "Tags, separated by commas" }), "tags",
+          function (v) { return v.split(",").map(function (t) { return t.trim(); }).filter(Boolean); })
+      ])
+    ])
+  ]));
+
+  /* Reordering works by dragging the grip and, because a drag is not
+     available to everyone, by focusing the grip and pressing the arrow
+     keys. */
+  function reorder(list, from, to, repaint) {
+    if (to < 0 || to >= list.length || from === to) return;
+    const moved = list.splice(from, 1)[0];
+    list.splice(to, 0, moved);
+    touch();
+    repaint(to);
+  }
+
+  function gripFor(list, index, repaint, what) {
+    return el("button", {
+      class: "editrow__grip", type: "button", "aria-label":
+        "Reorder " + what + " " + (index + 1) + ". Press the up or down arrow key to move it.",
+      onkeydown: function (event) {
+        if (event.key === "ArrowUp") { event.preventDefault(); reorder(list, index, index - 1, repaint); }
+        if (event.key === "ArrowDown") { event.preventDefault(); reorder(list, index, index + 1, repaint); }
+      }
+    }, icon("grip"));
+  }
+
+  function dragHandlers(list, index, repaint) {
+    return {
+      draggable: "true",
+      ondragstart: function (event) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", String(index));
+        event.currentTarget.classList.add("is-dragging");
+      },
+      ondragend: function (event) { event.currentTarget.classList.remove("is-dragging"); },
+      ondragover: function (event) { event.preventDefault(); event.currentTarget.classList.add("is-over"); },
+      ondragleave: function (event) { event.currentTarget.classList.remove("is-over"); },
+      ondrop: function (event) {
+        event.preventDefault();
+        event.currentTarget.classList.remove("is-over");
+        const from = parseInt(event.dataTransfer.getData("text/plain"), 10);
+        if (!isNaN(from)) reorder(list, from, index, repaint);
+      }
+    };
+  }
+
+  const ingredientHost = el("div", { class: "list" });
+  const expanded = {};
+  function paintIngredients(focusIndex) {
+    setContent(ingredientHost, draft.ingredients.map(function (ing, index) {
+      const open = !!expanded["k" + index];
+      const props = Object.assign({ class: "editrow" }, dragHandlers(draft.ingredients, index, paintIngredients));
+      props.style = "flex-wrap:wrap";
+      return el("div", props, [
+        gripFor(draft.ingredients, index, paintIngredients, "ingredient"),
+        el("div", { class: "editrow__fields" }, [
+          el("input", { class: "field field--inline amount", value: ing.amount === null ? "" : String(ing.amount),
+            placeholder: "200", inputmode: "decimal", "aria-label": "Amount for ingredient " + (index + 1),
+            oninput: function (event) {
+              const value = parseFloat(event.target.value.replace(",", "."));
+              ing.amount = isNaN(value) ? null : value;
+              touch();
+            } }),
+          el("input", { class: "field field--inline unit", value: ing.unit, placeholder: "g",
+            "aria-label": "Unit for ingredient " + (index + 1),
+            oninput: function (event) { ing.unit = event.target.value; touch(); } }),
+          el("input", { class: "field field--inline item", value: ing.item, placeholder: "spaghetti",
+            "aria-label": "Ingredient " + (index + 1),
+            oninput: function (event) { ing.item = event.target.value; touch(); } })
+        ]),
+        el("button", { class: "iconbtn iconbtn--neutral", type: "button",
+          "aria-expanded": String(open),
+          "aria-label": (open ? "Hide" : "Show") + " section and note for ingredient " + (index + 1),
+          onclick: function () {
+            if (open) expanded["k" + index] = false; else expanded["k" + index] = true;
+            paintIngredients();
+          } }, icon("down")),
+        el("button", { class: "iconbtn iconbtn--danger", type: "button",
+          "aria-label": "Remove ingredient " + (index + 1),
+          onclick: function () {
+            draft.ingredients.splice(index, 1);
+            if (!draft.ingredients.length) {
+              draft.ingredients.push({ amount: null, unit: "", item: "", note: "", group: "" });
+            }
+            touch();
+            paintIngredients();
+          } }, icon("trash")),
+        /* A section heading and a note are the difference between a list and
+           a recipe you can follow, but most rows need neither, so they stay
+           folded away until asked for. */
+        open ? el("div", { style: "flex:1 0 100%;display:flex;gap:8px;flex-wrap:wrap;" +
+                                  "padding:8px 0 0 44px" }, [
+          el("input", { class: "field field--inline", style: "flex:1 1 9rem",
+            value: ing.group, placeholder: "Section, e.g. For the sauce",
+            "aria-label": "Section heading for ingredient " + (index + 1),
+            oninput: function (event) { ing.group = event.target.value; touch(); } }),
+          el("input", { class: "field field--inline", style: "flex:1 1 9rem",
+            value: ing.note, placeholder: "Note, e.g. finely chopped",
+            "aria-label": "Note for ingredient " + (index + 1),
+            oninput: function (event) { ing.note = event.target.value; touch(); } })
+        ]) : null
+      ]);
+    }));
+    if (typeof focusIndex === "number") {
+      const grips = ingredientHost.querySelectorAll(".editrow__grip");
+      if (grips[focusIndex]) grips[focusIndex].focus();
+    }
+  }
+  paintIngredients();
+
+  wrap.appendChild(el("section", { class: "group" }, [
+    el("div", { class: "group__header", text: "Ingredients" }),
+    ingredientHost,
+    el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-top:12px" }, [
+      el("button", { class: "btn btn--tinted", type: "button", onclick: function () {
+        draft.ingredients.push({ amount: null, unit: "", item: "", note: "", group: "" });
+        touch();
+        paintIngredients(draft.ingredients.length - 1);
+      } }, [icon("plus"), "Add ingredient"]),
+      el("button", { class: "btn btn--gray", type: "button", onclick: function () {
+        openPasteSheet("ingredients", function (lines) {
+          const parsed = lines.map(parseIngredientLine);
+          const onlyBlank = draft.ingredients.length === 1 && !draft.ingredients[0].item;
+          draft.ingredients = onlyBlank ? parsed : draft.ingredients.concat(parsed);
+          touch();
+          paintIngredients();
+          toast(plural(parsed.length, "ingredient", "ingredients") + " added", "ok");
+        });
+      } }, [icon("import"), "Paste a list"])
+    ])
+  ]));
+
+  const stepHost = el("div", { class: "list" });
+  function paintSteps(focusIndex) {
+    setContent(stepHost, draft.steps.map(function (step, index) {
+      const props = Object.assign({ class: "editrow" }, dragHandlers(draft.steps, index, paintSteps));
+      const minutes = step.seconds ? Math.round(step.seconds / 60) : "";
+      return el("div", props, [
+        gripFor(draft.steps, index, paintSteps, "step"),
+        el("div", { class: "editrow__fields", style: "flex-direction:column;align-items:stretch" }, [
+          el("div", { style: "display:flex;align-items:center;gap:8px" }, [
+            el("span", { class: "step__no", text: String(index + 1) }),
+            el("span", { class: "t-footnote secondary", text: "Step " + (index + 1) })
+          ]),
+          el("textarea", { class: "field", rows: "3", value: step.text,
+            placeholder: "Describe what to do", "aria-label": "Step " + (index + 1),
+            oninput: function (event) { step.text = event.target.value; touch(); } }),
+          el("div", { style: "display:flex;align-items:center;gap:8px;flex-wrap:wrap" }, [
+            icon("timer"),
+            el("input", { class: "field field--inline", style: "flex:0 1 5rem", type: "number", min: "0",
+              inputmode: "numeric", value: String(minutes), placeholder: "0",
+              "aria-label": "Timer for step " + (index + 1) + " in minutes",
+              oninput: function (event) {
+                const value = parseInt(event.target.value, 10);
+                step.seconds = isNaN(value) ? 0 : Math.max(0, value) * 60;
+                touch();
+              } }),
+            el("span", { class: "t-footnote secondary", text: "minute timer (0 for none)" })
+          ]),
+          /* A picture of what the pan should look like at this point is often
+             worth more than another sentence describing it. */
+          el("div", { style: "display:flex;align-items:center;gap:8px;flex-wrap:wrap" }, [
+            step.photo_id ? el("img", {
+              src: photoUrl(step.photo_id), alt: "",
+              style: "width:56px;height:56px;border-radius:10px;object-fit:cover;flex:0 0 auto"
+            }) : null,
+            el("button", { class: "btn btn--gray", type: "button",
+              style: "min-height:38px;padding:0 14px;font-size:var(--t-subhead)",
+              onclick: async function () {
+                const photo = await pickPhoto(draft.title.trim());
+                if (!photo) return;
+                step.photo_id = photo.id;
+                touch();
+                paintSteps();
+              } }, [icon("camera"), step.photo_id ? "Replace photo" : "Add photo"]),
+            step.photo_id ? el("button", { class: "btn btn--danger", type: "button",
+              style: "min-height:38px;padding:0 14px;font-size:var(--t-subhead)",
+              onclick: function () { step.photo_id = null; touch(); paintSteps(); } },
+              "Remove") : null
+          ])
+        ]),
+        el("button", { class: "iconbtn iconbtn--danger", type: "button",
+          "aria-label": "Remove step " + (index + 1),
+          onclick: function () {
+            draft.steps.splice(index, 1);
+            if (!draft.steps.length) draft.steps.push({ text: "", seconds: 0, photo_id: null });
+            touch();
+            paintSteps();
+          } }, icon("trash"))
+      ]);
+    }));
+    if (typeof focusIndex === "number") {
+      const areas = stepHost.querySelectorAll("textarea");
+      if (areas[focusIndex]) areas[focusIndex].focus();
+    }
+  }
+  paintSteps();
+
+  wrap.appendChild(el("section", { class: "group" }, [
+    el("div", { class: "group__header", text: "Method" }),
+    stepHost,
+    el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-top:12px" }, [
+      el("button", { class: "btn btn--tinted", type: "button", onclick: function () {
+        draft.steps.push({ text: "", seconds: 0, photo_id: null });
+        touch();
+        paintSteps(draft.steps.length - 1);
+      } }, [icon("plus"), "Add step"]),
+      el("button", { class: "btn btn--gray", type: "button", onclick: function () {
+        openPasteSheet("steps", function (lines) {
+          const parsed = lines.map(function (line) {
+            return { text: line, seconds: detectSeconds(line), photo_id: null };
+          });
+          const onlyBlank = draft.steps.length === 1 && !draft.steps[0].text;
+          draft.steps = onlyBlank ? parsed : draft.steps.concat(parsed);
+          touch();
+          paintSteps();
+          const timed = parsed.filter(function (s) { return s.seconds; }).length;
+          toast(plural(parsed.length, "step", "steps") + " added" +
+                (timed ? ", " + timed + " with a timer" : ""), "ok");
+        });
+      } }, [icon("import"), "Paste a method"])
+    ])
+  ]));
+
+  wrap.appendChild(el("section", { class: "group" }, [
+    el("div", { class: "group__header", text: "Extras" }),
+    el("div", { class: "stack" }, [
+      el("div", null, [
+        el("span", { class: "label", text: "Notes" }),
+        bind(el("textarea", { class: "field", rows: "4", value: draft.notes,
+          placeholder: "Swaps, what went wrong last time, what to serve it with",
+          "aria-label": "Notes" }), "notes")
+      ]),
+      el("div", null, [
+        el("span", { class: "label", text: "Source" }),
+        bind(el("input", { class: "field", value: draft.source,
+          placeholder: "A link, a book, or a person", "aria-label": "Source" }), "source")
+      ])
+    ])
+  ]));
+
+  wrap.appendChild(el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px" }, [
+    el("button", { class: "btn btn--filled", type: "button", style: "flex:1;min-width:12rem",
+                   onclick: save }, [icon("check"), "Save recipe"]),
+    el("button", { class: "btn btn--gray", type: "button", onclick: leave, text: "Cancel" })
+  ]));
+
+  setContent(main, wrap);
+};
+</script>
+<script>
+/* ==========================================================================
+   Cooking mode
+   A separate environment for the few minutes when hands are busy: one step
+   at a time, large type, wide targets, the screen kept awake.
+   ========================================================================== */
+"use strict";
+
+let cookSession = null;
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!state.prefs.keepAwake || !navigator.wakeLock) return;
+  try { wakeLock = await navigator.wakeLock.request("screen"); }
+  catch (err) { wakeLock = null; }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { try { wakeLock.release(); } catch (err) { /* already gone */ } }
+  wakeLock = null;
+}
+
+// A wake lock is dropped when the tab is hidden, so it has to be retaken.
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden && cookSession && !wakeLock) requestWakeLock();
+});
+
+async function openCook(recipeId) {
+  const recipe = findRecipe(recipeId) || await api("api/recipes/" + recipeId);
+  const steps = (recipe.steps || []).filter(function (s) { return (s.text || "").trim(); });
+
+  /* Cooking gets interrupted - the phone locks, someone rings the doorbell.
+     Coming back should not mean hunting for where you were. */
+  const saved = readStore(COOKING_KEY, null);
+  let startAt = 0;
+  let resumed = false;
+  if (saved && saved.recipeId === recipe.id &&
+      saved.index > 0 && saved.index < steps.length) {
+    startAt = saved.index;
+    resumed = true;
+  }
+  cookSession = { recipe: recipe, steps: steps, index: startAt, finished: false };
+
+  const host = $("#cook");
+  host.hidden = false;
+  host.classList.add("is-open");
+  document.body.style.overflow = "hidden";
+  updatePill();
+  requestWakeLock();
+  unlockAudio();
+  paintCook();
+  host.focus();
+  if (resumed) {
+    toast("Picked up at step " + (startAt + 1), null, {
+      label: "Start over",
+      onAction: function () {
+        if (!cookSession) return;
+        cookSession.index = 0;
+        cookSession.finished = false;
+        writeStore(COOKING_KEY, { recipeId: recipe.id, index: 0 });
+        paintCook();
+      }
+    });
+  }
+}
+
+function closeCook(silent) {
+  const host = $("#cook");
+  if (!host.classList.contains("is-open")) return;
+  host.classList.remove("is-open");
+  host.hidden = true;
+  clear(host);
+  document.body.style.overflow = "";
+  releaseWakeLock();
+  const session = cookSession;
+  cookSession = null;
+  updatePill();
+  if (!silent && session) go("#/recipe/" + session.recipe.id, true);
+}
+
+function cookGo(delta) {
+  if (!cookSession) return;
+  const next = cookSession.index + delta;
+  if (next < 0) return;
+  if (next >= cookSession.steps.length) { cookSession.finished = true; paintCook(); return; }
+  cookSession.index = next;
+  cookSession.finished = false;
+  writeStore(COOKING_KEY, { recipeId: cookSession.recipe.id, index: next });
+  paintCook();
+  const body = $(".cook__body");
+  if (body) body.scrollTop = 0;
+}
+
+document.addEventListener("keydown", function (event) {
+  if (!cookSession) return;
+  if (event.target && /^(INPUT|TEXTAREA)$/.test(event.target.tagName)) return;
+  if (event.key === "ArrowRight") { event.preventDefault(); cookGo(1); }
+  if (event.key === "ArrowLeft") { event.preventDefault(); cookGo(-1); }
+});
+</script>
+<script>
+"use strict";
+
+function cookIngredientsSheet() {
+  const recipe = cookSession.recipe;
+  openSheet({
+    title: "Ingredients",
+    cancelLabel: "Done",
+    body: el("div", { class: "list" }, ingredientList(recipe, 1))
+  });
+}
+
+function stepTimerBlock(step, index) {
+  const recipe = cookSession.recipe;
+  const label = recipe.title + " \u00B7 step " + (index + 1);
+  const existing = timers.filter(function (t) {
+    return t.recipeId === recipe.id && t.stepIndex === index;
+  })[0];
+
+  if (!existing) {
+    return el("button", {
+      class: "btn btn--tinted btn--block btn--large", type: "button",
+      onclick: function () {
+        addTimer({ label: label, seconds: step.seconds, recipeId: recipe.id, stepIndex: index });
+        paintCook();
+      }
+    }, [icon("timer"), "Start " + formatClock(step.seconds) + " timer"]);
+  }
+
+  return el("div", { class: "cook__timer" + (existing.done ? " is-done" : ""),
+                     dataset: { timerCard: existing.id } }, [
+    icon("timer"),
+    el("span", { class: "cook__timer-time", dataset: { timerTime: existing.id },
+                 text: existing.done ? "Done" : formatClock(timerRemaining(existing)) }),
+    el("span", { style: "flex:1" }),
+    el("button", { class: "iconbtn", type: "button", dataset: { timerToggle: existing.id },
+                   "aria-label": existing.paused ? "Resume timer" : "Pause timer",
+                   onclick: function () { toggleTimer(existing.id); } },
+      icon(existing.paused ? "play" : "pause")),
+    el("button", { class: "iconbtn iconbtn--neutral", type: "button", "aria-label": "Reset timer",
+                   onclick: function () { resetTimer(existing.id); paintCook(); } }, icon("reset")),
+    el("button", { class: "iconbtn iconbtn--neutral", type: "button", "aria-label": "Remove timer",
+                   onclick: function () { removeTimer(existing.id); paintCook(); } }, icon("x"))
+  ]);
+}
+
+async function finishCooking() {
+  const recipe = cookSession.recipe;
+  try {
+    const updated = await api("api/recipes/" + recipe.id + "/cooked", { method: "POST" });
+    const index = state.recipes.findIndex(function (r) { return r.id === updated.id; });
+    if (index >= 0) state.recipes[index] = updated;
+    toast("Logged. That is " + plural(updated.cooked_count, "cook", "cooks") + ".", "ok");
+  } catch (err) {
+    reportError(err);
+  }
+  // Timers belonging to this session have served their purpose.
+  timers = timers.filter(function (t) { return t.recipeId !== recipe.id; });
+  persistTimers();
+  state.checked[recipe.id] = {};
+  writeStore(CHECKED_KEY, state.checked);
+  writeStore(COOKING_KEY, null);
+  closeCook();
+}
+</script>
+<script>
+"use strict";
+
+function paintCook() {
+  const host = $("#cook");
+  const session = cookSession;
+  if (!session) return;
+  const recipe = session.recipe;
+  const total = session.steps.length;
+
+  const bar = el("div", { class: "cook__bar" }, [
+    el("button", { class: "iconbtn", type: "button", "aria-label": "Leave cooking mode",
+                   onclick: function () { closeCook(); } }, icon("x")),
+    el("span", { class: "cook__count", "aria-live": "polite",
+                 text: session.finished ? "Finished" : "Step " + (session.index + 1) + " of " + total }),
+    el("span", { class: "iconbtn", "aria-hidden": "true" })
+  ]);
+
+  const done = session.finished ? 1 : total ? (session.index + 1) / total : 1;
+  const progress = el("div", { class: "cook__progress", role: "progressbar",
+    "aria-valuemin": "0", "aria-valuemax": String(total),
+    "aria-valuenow": String(session.finished ? total : session.index + 1),
+    "aria-label": "Cooking progress"
+  }, el("div", { style: "width:" + Math.round(done * 100) + "%" }));
+
+  let inner;
+  if (session.finished || !total) {
+    inner = el("div", { class: "cook__inner" }, el("div", { class: "cook__done" }, [
+      icon("check"),
+      el("h2", { class: "t-title1", text: "All done" }),
+      el("p", { class: "secondary", text: recipe.title + " is ready." }),
+      el("button", { class: "btn btn--filled btn--large btn--block", type: "button",
+                     onclick: finishCooking }, [icon("flame"), "Log this cook"]),
+      el("button", { class: "btn btn--gray btn--block", type: "button", text: "Close without logging",
+                     onclick: function () { closeCook(); } })
+    ]));
+  } else {
+    const step = session.steps[session.index];
+    inner = el("div", { class: "cook__inner" }, [
+      el("p", { class: "cook__stepno", text: "Step " + (session.index + 1) }),
+      el("p", { class: "cook__step", text: step.text }),
+      step.photo_id ? el("div", { class: "cook__photo" },
+        el("img", { src: photoUrl(step.photo_id), alt: "" })) : null,
+      step.seconds ? stepTimerBlock(step, session.index) : null,
+      el("button", { class: "btn btn--gray btn--block", type: "button", onclick: cookIngredientsSheet },
+        [icon("cart"), "Check the ingredients"])
+    ]);
+  }
+
+  const nav = session.finished ? null : el("div", { class: "cook__nav" }, [
+    el("button", { class: "btn btn--gray", type: "button", disabled: session.index === 0 ? true : null,
+                   onclick: function () { cookGo(-1); } }, [icon("back"), "Back"]),
+    el("button", { class: "btn btn--filled", type: "button", onclick: function () { cookGo(1); } },
+      [session.index + 1 >= total ? "Finish" : "Next", icon("fwd")])
+  ]);
+
+  setContent(host, [bar, progress, el("div", { class: "cook__body" }, inner), nav]);
+  host.setAttribute("aria-label", "Cooking " + recipe.title);
+  attachSwipe(host.querySelector(".cook__body"));
+}
+
+/* A horizontal swipe moves between steps. Every swipe has a button that does
+   the same thing, so nothing depends on the gesture. */
+function attachSwipe(node) {
+  if (!node) return;
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+  node.addEventListener("pointerdown", function (event) {
+    if (event.pointerType === "mouse") return;
+    tracking = true;
+    startX = event.clientX;
+    startY = event.clientY;
+  });
+  node.addEventListener("pointerup", function (event) {
+    if (!tracking) return;
+    tracking = false;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    cookGo(dx < 0 ? 1 : -1);
+    haptic();
+  });
+  node.addEventListener("pointercancel", function () { tracking = false; });
+}
+</script>
+<script>
+/* ==========================================================================
+   Timers view
+   ========================================================================== */
+"use strict";
+
+const TIMER_PRESETS = [1, 3, 5, 10, 15, 20, 30, 45];
+
+function timerCard(timer) {
+  return el("div", { class: "timer-card" + (timer.done ? " is-done" : ""),
+                     dataset: { timerCard: timer.id } }, [
+    el("div", { class: "timer-card__text" }, [
+      el("p", { class: "timer-card__label", text: timer.label }),
+      el("p", { class: "t-footnote secondary",
+                text: timer.done ? "Finished" : formatClock(timer.duration) + " set" +
+                      (timer.paused ? " \u00B7 paused" : "") })
+    ]),
+    el("span", { class: "timer-card__time tabular", dataset: { timerTime: timer.id },
+                 text: timer.done ? "Done" : formatClock(timerRemaining(timer)) }),
+    el("button", { class: "iconbtn", type: "button", dataset: { timerToggle: timer.id },
+                   hidden: timer.done ? true : null,
+                   "aria-label": (timer.paused ? "Resume " : "Pause ") + timer.label,
+                   onclick: function () { toggleTimer(timer.id); } },
+      icon(timer.paused ? "play" : "pause")),
+    el("button", { class: "iconbtn iconbtn--neutral", type: "button",
+                   "aria-label": "Reset " + timer.label,
+                   onclick: function () { resetTimer(timer.id); } }, icon("reset")),
+    el("button", { class: "iconbtn iconbtn--danger", type: "button",
+                   "aria-label": "Remove " + timer.label,
+                   onclick: function () { removeTimer(timer.id); } }, icon("trash"))
+  ]);
+}
+
+function renderTimerList() {
+  const host = $("#timerList");
+  if (!host) return;
+  if (!timers.length) {
+    setContent(host, el("div", { class: "empty" }, [
+      icon("timer"),
+      el("p", { class: "empty__title", text: "No timers running" }),
+      el("p", { class: "empty__body", text: "Start one above, or from a step while you cook." })
+    ]));
+    return;
+  }
+  setContent(host, el("div", { class: "stack" }, timers.map(timerCard)));
+}
+
+VIEWS.timers = async function (main) {
+  setTopbar({ title: "Timers" });
+
+  const nameField = el("input", { class: "field", placeholder: "What is it for?",
+                                  "aria-label": "Timer name" });
+  const minutesField = el("input", { class: "field", type: "number", min: "1", value: "10",
+    inputmode: "numeric", "aria-label": "Minutes" });
+  const secondsField = el("input", { class: "field", type: "number", min: "0", max: "59", value: "0",
+    inputmode: "numeric", "aria-label": "Seconds" });
+
+  const startCustom = function () {
+    const minutes = parseInt(minutesField.value, 10) || 0;
+    const seconds = parseInt(secondsField.value, 10) || 0;
+    const totalSeconds = minutes * 60 + seconds;
+    if (totalSeconds < 1) { toast("Set at least one second", "error"); return; }
+    addTimer({ label: nameField.value.trim() || formatClock(totalSeconds) + " timer",
+               seconds: totalSeconds });
+    nameField.value = "";
+    renderTimerList();
+  };
+
+  const list = el("div", { id: "timerList" });
+
+  setContent(main, el("div", { class: "wrap" }, [
+    el("h2", { class: "largetitle", text: "Timers" }),
+    el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Quick start" }),
+      el("div", { class: "presets" }, TIMER_PRESETS.map(function (minutes) {
+        return el("button", { type: "button", text: minutes + " min",
+          "aria-label": "Start a " + minutes + " minute timer",
+          onclick: function () {
+            addTimer({ label: minutes + " min timer", seconds: minutes * 60 });
+            renderTimerList();
+          } });
+      }))
+    ]),
+    el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Custom" }),
+      el("div", { class: "stack" }, [
+        nameField,
+        el("div", { class: "field-row" }, [
+          el("div", null, [el("span", { class: "label", text: "Minutes" }), minutesField]),
+          el("div", null, [el("span", { class: "label", text: "Seconds" }), secondsField])
+        ]),
+        el("button", { class: "btn btn--filled btn--block", type: "button", onclick: startCustom },
+          [icon("play"), "Start timer"])
+      ])
+    ]),
+    el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Running" }),
+      list
+    ])
+  ]));
+
+  renderTimerList();
+};
+</script>
+<script>
+/* ==========================================================================
+   Shopping list
+   ========================================================================== */
+"use strict";
+
+VIEWS.shopping = async function (main) {
+  setTopbar({ title: "Shopping" });
+  await refreshShopping();
+
+  const field = el("input", { class: "field", placeholder: "Add an item",
+                              "aria-label": "Add an item", enterkeyhint: "done" });
+  const listHost = el("div");
+
+  async function add() {
+    const text = field.value.trim();
+    if (!text) return;
+    field.value = "";
+    try {
+      await api("api/shopping", { method: "POST", body: { text: text, recipe: "" } });
+      await refreshShopping();
+      paint();
+      field.focus();
+    } catch (err) { reportError(err); }
+  }
+
+  field.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") { event.preventDefault(); add(); }
+  });
+
+  function paint() {
+    const items = state.shopping;
+    if (!items.length) {
+      setContent(listHost, el("div", { class: "empty" }, [
+        icon("cart"),
+        el("p", { class: "empty__title", text: "The list is empty" }),
+        el("p", { class: "empty__body",
+                  text: "Add something above, or send a whole recipe here from its page." })
+      ]));
+      return;
+    }
+    const remaining = items.filter(function (i) { return !i.checked; }).length;
+    setContent(listHost, [
+      el("p", { class: "t-footnote secondary", style: "margin-bottom:8px",
+                text: remaining + " of " + items.length + " left" }),
+      el("div", { class: "list" }, items.map(function (item) {
+        return el("button", {
+          class: "ing", type: "button", "aria-pressed": String(item.checked),
+          onclick: async function (event) {
+            const next = !item.checked;
+            item.checked = next;
+            event.currentTarget.setAttribute("aria-pressed", String(next));
+            haptic();
+            try { await api("api/shopping/" + item.id, { method: "PATCH", body: { checked: next } }); }
+            catch (err) { reportError(err); }
+          }
+        }, [
+          el("span", { class: "ing__check" }, icon("check")),
+          el("span", { class: "ing__text" }, [
+            el("span", { text: item.text }),
+            item.recipe ? el("span", { class: "t-footnote secondary", text: " \u00B7 " + item.recipe }) : null
+          ])
+        ]);
+      })),
+      el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-top:16px" }, [
+        el("button", { class: "btn btn--gray", type: "button", onclick: async function () {
+          try {
+            await api("api/shopping?checked_only=true", { method: "DELETE" });
+            await refreshShopping();
+            paint();
+            toast("Ticked items cleared", "ok");
+          } catch (err) { reportError(err); }
+        } }, [icon("check"), "Clear ticked"]),
+        el("button", { class: "btn btn--danger", type: "button", onclick: async function () {
+          const ok = await confirmAction({
+            title: "Empty the shopping list?",
+            message: "Every item on the list will be removed.",
+            confirmLabel: "Empty list", destructive: true
+          });
+          if (!ok) return;
+          try {
+            await api("api/shopping?checked_only=false", { method: "DELETE" });
+            await refreshShopping();
+            paint();
+          } catch (err) { reportError(err); }
+        } }, [icon("trash"), "Empty list"])
+      ])
+    ]);
+  }
+
+  setContent(main, el("div", { class: "wrap" }, [
+    el("h2", { class: "largetitle", text: "Shopping" }),
+    el("div", { style: "display:flex;gap:8px;margin-bottom:20px" }, [
+      field,
+      el("button", { class: "btn btn--filled", type: "button", onclick: add, "aria-label": "Add item" },
+        icon("plus"))
+    ]),
+    listHost
+  ]));
+  paint();
+};
+</script>
+<script>
+/* ==========================================================================
+   Settings
+   ========================================================================== */
+"use strict";
+
+const TEXT_SCALES = [0.88, 1, 1.15, 1.35, 1.6, 2];
+const TEXT_SCALE_NAMES = ["Small", "Default", "Large", "Larger", "Huge", "Largest"];
+
+function switchRow(label, description, key) {
+  const input = el("input", { type: "checkbox", checked: state.prefs[key] ? true : null,
+    "aria-label": label,
+    onchange: function (event) { state.prefs[key] = event.target.checked; savePrefs(); } });
+  return el("label", { class: "row" }, [
+    el("span", { class: "row__text" }, [
+      el("span", { class: "row__title", text: label }),
+      description ? el("span", { class: "row__sub", text: description }) : null
+    ]),
+    el("span", { class: "switch" }, [input, el("span", { class: "switch__track" }),
+                                     el("span", { class: "switch__thumb" })])
+  ]);
+}
+
+function appearanceControl() {
+  const options = [["auto", "Automatic"], ["light", "Light"], ["dark", "Dark"]];
+  return el("div", { class: "segmented", role: "group", "aria-label": "Appearance" },
+    options.map(function (option) {
+      return el("button", { type: "button", text: option[1], dataset: { value: option[0] },
+        "aria-pressed": String(state.prefs.appearance === option[0]),
+        onclick: function (event) {
+          state.prefs.appearance = option[0];
+          savePrefs();
+          Array.prototype.forEach.call(event.currentTarget.parentNode.children, function (b) {
+            b.setAttribute("aria-pressed", String(b.dataset.value === option[0]));
+          });
+        } });
+    }));
+}
+
+function textSizeControl() {
+  let index = TEXT_SCALES.indexOf(state.prefs.textScale);
+  if (index < 0) index = 1;
+  const readout = el("span", { class: "t-footnote secondary", text: TEXT_SCALE_NAMES[index] });
+  const slider = el("input", {
+    type: "range", min: "0", max: String(TEXT_SCALES.length - 1), step: "1", value: String(index),
+    style: "flex:1;min-width:8rem;accent-color:var(--tint);height:44px",
+    "aria-label": "Text size", "aria-valuetext": TEXT_SCALE_NAMES[index],
+    oninput: function (event) {
+      const next = parseInt(event.target.value, 10);
+      state.prefs.textScale = TEXT_SCALES[next];
+      readout.textContent = TEXT_SCALE_NAMES[next];
+      event.target.setAttribute("aria-valuetext", TEXT_SCALE_NAMES[next]);
+      savePrefs();
+    }
+  });
+  return el("div", { style: "display:flex;align-items:center;gap:12px;padding:8px 16px" }, [
+    el("span", { class: "t-footnote", text: "A", "aria-hidden": "true" }),
+    slider,
+    el("span", { class: "t-title3", text: "A", "aria-hidden": "true" }),
+    readout
+  ]);
+}
+</script>
+<script>
+"use strict";
+
+async function restoreBackup(file) {
+  const text = await file.text();
+  let payload;
+  try { payload = JSON.parse(text); }
+  catch (err) { toast("That file is not valid JSON", "error"); return; }
+  const result = await api("api/backup", { method: "POST", body: payload });
+  await refreshRecipes();
+  toast(plural(result.imported, "recipe", "recipes") + " restored", "ok");
+}
+
+VIEWS.settings = async function (main) {
+  setTopbar({ title: "Settings" });
+
+  const stats = await api("api/stats").catch(function () { return null; });
+
+  const restoreInput = el("input", { type: "file", accept: "application/json,.json",
+    class: "visually-hidden",
+    onchange: async function (event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try { await restoreBackup(file); render(); }
+      catch (err) { reportError(err); }
+    } });
+
+  const notificationsRow = function () {
+    const supported = "Notification" in window;
+    const status = !supported ? "Not supported in this browser"
+      : Notification.permission === "granted" ? "Allowed"
+      : Notification.permission === "denied" ? "Blocked in browser settings"
+      : "Not asked yet";
+    return el("button", {
+      class: "row", type: "button",
+      disabled: !supported || Notification.permission !== "default" ? true : null,
+      onclick: function () { requestNotifications(); setTimeout(render, 400); }
+    }, [
+      el("span", { class: "row__text" }, [
+        el("span", { class: "row__title", text: "Timer notifications" }),
+        el("span", { class: "row__sub", text: status })
+      ]),
+      supported && Notification.permission === "default" ? icon("fwd", "row__chevron") : null
+    ]);
+  };
+
+  setContent(main, el("div", { class: "wrap" }, [
+    el("h2", { class: "largetitle", text: "Settings" }),
+
+    el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Appearance" }),
+      el("div", { class: "list" }, [
+        el("div", { style: "padding:12px 16px" }, appearanceControl()),
+        el("div", { style: "box-shadow:inset 0 0.5px 0 var(--separator)" }, textSizeControl())
+      ]),
+      el("p", { class: "group__footer",
+                text: "Automatic follows the light or dark setting of your device." })
+    ]),
+
+    el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Accessibility" }),
+      el("div", { class: "list" }, [
+        switchRow("Reduce motion", "Turn off sliding and fading animations.", "reduceMotion"),
+        switchRow("Reduce transparency", "Make the bars solid instead of frosted.", "reduceTransparency")
+      ]),
+      el("p", { class: "group__footer",
+                text: "These also follow your system settings automatically." })
+    ]),
+
+    el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Cooking" }),
+      el("div", { class: "list" }, [
+        switchRow("Keep the screen awake", "While cooking mode is open.", "keepAwake"),
+        switchRow("Timer sound", "Play a chime when a timer finishes.", "sound"),
+        notificationsRow()
+      ])
+    ]),
+
+    el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Recipes" }),
+      el("div", { class: "list" }, [
+        el("button", { class: "row", type: "button", onclick: openImportSheet }, [
+          el("span", { class: "row__text" }, [
+            el("span", { class: "row__title", text: "Add a recipe" }),
+            el("span", { class: "row__sub", text: "Import from a link, or search a database" })
+          ]),
+          icon("fwd", "row__chevron")
+        ]),
+        el("a", { class: "row", href: BASE + "api/backup", download: "" }, [
+          el("span", { class: "row__text" }, [
+            el("span", { class: "row__title", text: "Export a backup" }),
+            el("span", { class: "row__sub", text: "Every recipe as one JSON file" })
+          ]),
+          icon("export", "row__chevron")
+        ]),
+        el("button", { class: "row", type: "button",
+                       onclick: function () { restoreInput.click(); } }, [
+          el("span", { class: "row__text" }, [
+            el("span", { class: "row__title", text: "Restore from a backup" }),
+            el("span", { class: "row__sub", text: "Adds the recipes in the file to this library" })
+          ]),
+          icon("import", "row__chevron")
+        ])
+      ]),
+      restoreInput
+    ]),
+
+    stats ? el("section", { class: "group" }, [
+      el("div", { class: "group__header", text: "Library" }),
+      el("div", { class: "stat-grid" }, [
+        el("div", { class: "stat" }, [el("p", { class: "stat__n", text: String(stats.recipes) }),
+                                      el("p", { class: "stat__l", text: "recipes" })]),
+        el("div", { class: "stat" }, [el("p", { class: "stat__n", text: String(stats.cooked_total) }),
+                                      el("p", { class: "stat__l", text: "cooks logged" })]),
+        el("div", { class: "stat" }, [el("p", { class: "stat__n", text: String(stats.photos) }),
+                                      el("p", { class: "stat__l", text: "photos" })]),
+        el("div", { class: "stat" }, [el("p", { class: "stat__n", text: formatBytes(stats.photo_bytes) }),
+                                      el("p", { class: "stat__l", text: "on disk" })])
+      ])
+    ]) : null,
+
+    el("p", { class: "t-footnote secondary", style: "text-align:center;padding:8px 0 32px" },
+      "Recipes, photos and the shopping list are stored on the server, so every device sees " +
+      "the same library. Appearance, text size and running timers stay on this device.")
+  ]));
+};
+</script>
+<script>
+/* ==========================================================================
+   Start up
+   ========================================================================== */
+"use strict";
+
+applyPrefs();
+loadTimers();
+watchScroll();
+updateTimerViews();
+
+function updateConnection(wasOffline) {
+  const bar = $("#offlineBar");
+  if (navigator.onLine) {
+    bar.hidden = true;
+    clear(bar);
+    // Whatever failed while the connection was down is worth retrying now.
+    if (wasOffline) render().catch(reportError);
+    return;
+  }
+  bar.hidden = false;
+  setContent(bar, [icon("warn"), el("span", { text: "Offline \u2014 changes cannot be saved" })]);
+}
+
+window.addEventListener("offline", function () { updateConnection(false); });
+window.addEventListener("online", function () { updateConnection(true); });
+updateConnection(false);
+
+// The first tap anywhere unlocks audio, so a timer chime is not silently
+// swallowed by the browser's autoplay rules later on.
+document.addEventListener("pointerdown", function once() {
+  unlockAudio();
+  document.removeEventListener("pointerdown", once);
+}, { once: true });
+
+/* Offline caching needs a secure context, which a plain http:// address on a
+   private network is not. Registering it there would fail on every load, so it
+   is attempted only where the browser allows it; everywhere else the app just
+   needs the network, exactly as before. */
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register(BASE + "sw.js", { scope: BASE })
+    .catch(function (err) {
+      // Never fatal, but silence here cost an afternoon once already.
+      console.warn("Offline support unavailable:", err && err.message);
+    });
+}
+
+render().catch(reportError);
+</script>
+
+</body>
+</html>

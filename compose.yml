@@ -1,0 +1,40 @@
+name: mordorcook
+
+services:
+  mordorcook:
+    build: .
+    image: mordorcook
+    container_name: mordorcook
+    restart: unless-stopped
+
+    # UID/GID must match the owner of ./data, otherwise SQLite cannot write.
+    user: "${MORDORCOOK_UID:-1000}:${MORDORCOOK_GID:-1000}"
+
+    ports:
+      - "${MORDORCOOK_PORT:-8105}:8000"
+
+    volumes:
+      - ./data:/data
+
+    environment:
+      MORDORCOOK_DATA_DIR: /data
+      MORDORCOOK_CONTACT: "${MORDORCOOK_CONTACT:-}"
+
+    # The probe runs inside the container. python:3.12-slim ships neither
+    # curl nor wget, so it asks the interpreter that is already there.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import os,sys,urllib.request; sys.exit(0 if urllib.request.urlopen("http://127.0.0.1:%s/api/health" % os.environ.get("PORT", "8000"), timeout=2).status == 200 else 1)
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,6 @@
+.git
+.env
+data
+__pycache__
+venv
+FOREMAN-REPO-TEMPLATE.txt
