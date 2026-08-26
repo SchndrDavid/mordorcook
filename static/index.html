@@ -94,6 +94,93 @@
 
 }
 :root[data-appearance="dark"] { color-scheme: dark; }
+#offlineBar { display: none !important; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance="light"]) {
+    --tint:            #7C946E;
+    --tint-pressed:    #5D7052;
+    --tint-soft:       rgba(124, 148, 110, 0.15);
+    --tint-on:         #1A1A18;
+    --destructive:     #D27264;
+    --success:         #7C946E;
+    --warning:         #D69F6B;
+    --warning-on:      #1A1A18;
+
+    --label:           #EAEAE4;
+    --label-secondary: #A0A096;
+    --label-tertiary:  #6E6E66;
+    --label-quaternary:rgba(234, 234, 228, 0.2);
+
+    --bg:              #1A1A18;
+    --bg-card:         #242421;
+    --bg-raised:       #2C2C28;
+    --bg-plain:        #1A1A18;
+
+    --fill-1:          rgba(234, 234, 228, 0.15);
+    --fill-2:          rgba(234, 234, 228, 0.12);
+    --fill-3:          rgba(234, 234, 228, 0.08);
+    --fill-4:          rgba(234, 234, 228, 0.04);
+    --separator:       #3A3A36;
+    --separator-solid: #3A3A36;
+
+    --glass-tint:      rgba(26, 26, 24, 0.85);
+    --glass-solid:     #1A1A18;
+    --scrim:           rgba(0, 0, 0, 0.6);
+    
+    --shadow-card:     0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    --shadow-raised:   0 10px 40px -10px rgba(0, 0, 0, 0.6);
+  }
+}
+:root[data-appearance="dark"] {
+    --tint:            #7C946E;
+    --tint-pressed:    #5D7052;
+    --tint-soft:       rgba(124, 148, 110, 0.15);
+    --tint-on:         #1A1A18;
+    --destructive:     #D27264;
+    --success:         #7C946E;
+    --warning:         #D69F6B;
+    --warning-on:      #1A1A18;
+
+    --label:           #EAEAE4;
+    --label-secondary: #A0A096;
+    --label-tertiary:  #6E6E66;
+    --label-quaternary:rgba(234, 234, 228, 0.2);
+
+    --bg:              #1A1A18;
+    --bg-card:         #242421;
+    --bg-raised:       #2C2C28;
+    --bg-plain:        #1A1A18;
+
+    --fill-1:          rgba(234, 234, 228, 0.15);
+    --fill-2:          rgba(234, 234, 228, 0.12);
+    --fill-3:          rgba(234, 234, 228, 0.08);
+    --fill-4:          rgba(234, 234, 228, 0.04);
+    --separator:       #3A3A36;
+    --separator-solid: #3A3A36;
+
+    --glass-tint:      rgba(26, 26, 24, 0.85);
+    --glass-solid:     #1A1A18;
+    --scrim:           rgba(0, 0, 0, 0.6);
+    
+    --shadow-card:     0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    --shadow-raised:   0 10px 40px -10px rgba(0, 0, 0, 0.6);
+}
+
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance="light"]) body::before {
+    opacity: 0.03; mix-blend-mode: screen;
+  }
+  :root:not([data-appearance="light"]) .card, :root:not([data-appearance="light"]) .list, :root:not([data-appearance="light"]) .topbar, :root:not([data-appearance="light"]) .tabbar { border-color: rgba(255, 255, 255, 0.1); }
+  :root:not([data-appearance="light"]) .hero__media { border-color: var(--bg-card); }
+}
+:root[data-appearance="dark"] body::before {
+  opacity: 0.03; mix-blend-mode: screen;
+}
+:root[data-appearance="dark"] .card, :root[data-appearance="dark"] .list, :root[data-appearance="dark"] .topbar, :root[data-appearance="dark"] .tabbar { border-color: rgba(255, 255, 255, 0.1); }
+:root[data-appearance="dark"] .hero__media { border-color: var(--bg-card); }
+
 </style>
 <style>
 /* ==========================================================================
@@ -918,6 +1005,7 @@ function el(tag, props, children) {
       if (value === null || value === undefined || value === false) return;
       if (key === "class") node.className = value;
       else if (key === "text") node.textContent = value;
+      else if (key === "value") node.value = value;
       else if (key === "dataset") Object.assign(node.dataset, value);
       else if (key.slice(0, 2) === "on") node.addEventListener(key.slice(2).toLowerCase(), value);
       else node.setAttribute(key, value === true ? "" : value);
@@ -2129,7 +2217,7 @@ VIEWS.recipe = async function (main, params) {
   }, [icon("trash"), "Delete recipe"]));
   wrap.appendChild(el("section", { class: "group" }, footer));
 
-  wrap.appendChild(el("div", { style: "height:76px" }));
+  wrap.appendChild(el("div", { style: "height:140px" }));
   setContent(main, wrap);
 
   // The primary action of the screen, and the only tinted fill on it.
