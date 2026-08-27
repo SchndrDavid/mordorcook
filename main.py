@@ -100,7 +100,40 @@ CREATE TABLE IF NOT EXISTS shopping (
     created_at TEXT NOT NULL
 );
 
+-- Everyone who cooks from this library. There is no login: a browser simply
+-- says which of these people it is, and the server keeps their private things
+-- (favourites) apart while the recipes themselves stay shared.
+CREATE TABLE IF NOT EXISTS users (
+    id         TEXT PRIMARY KEY,
+    name       TEXT NOT NULL,
+    colour     TEXT NOT NULL DEFAULT '',
+    position   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+-- Favourites are the one thing that is NOT shared, so they live beside the
+-- recipe rather than inside it.
+CREATE TABLE IF NOT EXISTS favourites (
+    user_id    TEXT NOT NULL,
+    recipe_id  TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, recipe_id)
+);
+
+-- The shared "what shall we cook?" board. Every entry carries its author, so
+-- the answer to "who put that there" is visible at a glance.
+CREATE TABLE IF NOT EXISTS wishlist (
+    id         TEXT PRIMARY KEY,
+    text       TEXT NOT NULL DEFAULT '',
+    note       TEXT NOT NULL DEFAULT '',
+    recipe_id  TEXT,
+    user_id    TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_recipes_updated ON recipes(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_favourites_user ON favourites(user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlist_created ON wishlist(created_at DESC);
 """
 
 
@@ -125,10 +158,41 @@ def db() -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
+DEFAULT_USER_NAME = os.getenv("MORDORCOOK_DEFAULT_USER", "Me").strip() or "Me"
+
+# Kept in step with the swatches offered in the app's settings screen.
+USER_COLOURS = ["sage", "clay", "plum", "sky", "amber", "rose"]
+
+
+def create_user(conn: sqlite3.Connection, name: str, colour: str = "") -> str:
+    """Add a person and return their id."""
+    uid = uuid.uuid4().hex
+    position = conn.execute("SELECT COALESCE(MAX(position), -1) + 1 AS p FROM users").fetchone()["p"]
+    if colour not in USER_COLOURS:
+        colour = USER_COLOURS[position % len(USER_COLOURS)]
+    conn.execute(
+        "INSERT INTO users (id, name, colour, position, created_at) VALUES (?,?,?,?,?)",
+        (uid, name, colour, position, now_iso()),
+    )
+    return uid
+
+
 def init_storage() -> None:
     PHOTO_DIR.mkdir(parents=True, exist_ok=True)
     with db() as conn:
         conn.executescript(SCHEMA)
+
+        # A library always belongs to at least one person. On the first run
+        # after this feature landed, the favourites that were a property of the
+        # recipe become that first person's favourites, so nothing is lost.
+        if conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"] == 0:
+            uid = create_user(conn, DEFAULT_USER_NAME)
+            ts = now_iso()
+            conn.executemany(
+                "INSERT OR IGNORE INTO favourites (user_id, recipe_id, created_at) VALUES (?,?,?)",
+                [(uid, r["id"], ts)
+                 for r in conn.execute("SELECT id FROM recipes WHERE favorite=1").fetchall()],
+            )
 
 
 class Ingredient(BaseModel):
@@ -173,6 +237,26 @@ class ShoppingPatch(BaseModel):
     checked: Optional[bool] = None
 
 
+class UserIn(BaseModel):
+    name: str = Field(default="", max_length=40)
+    colour: str = Field(default="", max_length=24)
+
+
+class UserPatch(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=40)
+    colour: Optional[str] = Field(default=None, max_length=24)
+
+
+class FavouriteIn(BaseModel):
+    favorite: bool = True
+
+
+class WishIn(BaseModel):
+    text: str = Field(default="", max_length=200)
+    note: str = Field(default="", max_length=400)
+    recipe_id: Optional[str] = None
+
+
 class PhotoImportIn(BaseModel):
     url: str
     attribution: str = ""
@@ -180,7 +264,12 @@ class PhotoImportIn(BaseModel):
     source: str = "web"
 
 
-def row_to_recipe(row: sqlite3.Row) -> dict[str, Any]:
+def row_to_recipe(row: sqlite3.Row, fav_ids: Optional[set[str]] = None) -> dict[str, Any]:
+    """Shape a recipe row for the API.
+
+    ``fav_ids`` is the set of recipes the person asking has favourited, so the
+    same recipe is returned with a different ``favorite`` flag for each of them.
+    """
     return {
         "id": row["id"],
         "title": row["title"],
@@ -197,7 +286,7 @@ def row_to_recipe(row: sqlite3.Row) -> dict[str, Any]:
         "steps": json.loads(row["steps"]),
         "notes": row["notes"],
         "source": row["source"],
-        "favorite": bool(row["favorite"]),
+        "favorite": row["id"] in fav_ids if fav_ids is not None else bool(row["favorite"]),
         "cooked_count": row["cooked_count"],
         "last_cooked_at": row["last_cooked_at"],
         "created_at": row["created_at"],
@@ -218,12 +307,117 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": SERVICE_NAME}
 
 
-@app.get("/api/recipes")
-def list_recipes(q: str = "", tag: str = "", favorite: bool = False, sort: str = "updated") -> list[dict[str, Any]]:
+def requested_user(request: Request) -> str:
+    """The person this browser says it is, unverified.
+
+    There is no login here: the app is for one household on its own network,
+    and a header is enough to keep two people's favourites from mixing.
+    """
+    return (request.headers.get("X-User-Id") or request.query_params.get("user") or "").strip()
+
+
+def resolve_user(conn: sqlite3.Connection, raw: str) -> str:
+    """Turn that claim into a real user id, falling back to the first person."""
+    if raw:
+        row = conn.execute("SELECT id FROM users WHERE id=?", (raw,)).fetchone()
+        if row is not None:
+            return row["id"]
+    row = conn.execute("SELECT id FROM users ORDER BY position, created_at LIMIT 1").fetchone()
+    if row is not None:
+        return row["id"]
+    return create_user(conn, DEFAULT_USER_NAME)
+
+
+def favourite_ids(conn: sqlite3.Connection, user_id: str) -> set[str]:
+    return {r["recipe_id"]
+            for r in conn.execute("SELECT recipe_id FROM favourites WHERE user_id=?", (user_id,))}
+
+
+def set_favourite(conn: sqlite3.Connection, user_id: str, recipe_id: str, on: bool) -> None:
+    if on:
+        conn.execute(
+            "INSERT OR IGNORE INTO favourites (user_id, recipe_id, created_at) VALUES (?,?,?)",
+            (user_id, recipe_id, now_iso()),
+        )
+    else:
+        conn.execute("DELETE FROM favourites WHERE user_id=? AND recipe_id=?", (user_id, recipe_id))
+    # The recipe's own column is no longer the truth, but keeping it as
+    # "somebody likes this" means older backups still round-trip sensibly.
+    anyone = conn.execute(
+        "SELECT COUNT(*) AS c FROM favourites WHERE recipe_id=?", (recipe_id,)
+    ).fetchone()["c"]
+    conn.execute("UPDATE recipes SET favorite=? WHERE id=?", (1 if anyone else 0, recipe_id))
+
+
+def row_to_user(row: sqlite3.Row) -> dict[str, Any]:
+    return {"id": row["id"], "name": row["name"], "colour": row["colour"],
+            "position": row["position"], "created_at": row["created_at"]}
+
+
+@app.get("/api/users")
+def list_users() -> list[dict[str, Any]]:
     with db() as conn:
+        if conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"] == 0:
+            create_user(conn, DEFAULT_USER_NAME)
+        rows = conn.execute("SELECT * FROM users ORDER BY position, created_at").fetchall()
+    return [row_to_user(r) for r in rows]
+
+
+@app.post("/api/users", status_code=201)
+def add_user(payload: UserIn) -> dict[str, Any]:
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Give this person a name")
+    with db() as conn:
+        uid = create_user(conn, name, payload.colour.strip())
+        row = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    return row_to_user(row)
+
+
+@app.patch("/api/users/{user_id}")
+def patch_user(user_id: str, payload: UserPatch) -> dict[str, Any]:
+    with db() as conn:
+        row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="No such person")
+        name = row["name"] if payload.name is None else payload.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Give this person a name")
+        colour = row["colour"] if payload.colour is None else payload.colour.strip()
+        if colour not in USER_COLOURS:
+            colour = row["colour"]
+        conn.execute("UPDATE users SET name=?, colour=? WHERE id=?", (name, colour, user_id))
+        row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    return row_to_user(row)
+
+
+@app.delete("/api/users/{user_id}", status_code=204)
+def delete_user(user_id: str) -> None:
+    """Remove a person, along with their favourites and their wishlist entries."""
+    with db() as conn:
+        if conn.execute("SELECT id FROM users WHERE id=?", (user_id,)).fetchone() is None:
+            raise HTTPException(status_code=404, detail="No such person")
+        if conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"] < 2:
+            raise HTTPException(status_code=400, detail="The library needs at least one person")
+        conn.execute("DELETE FROM favourites WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM wishlist WHERE user_id=?", (user_id,))
+        conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+        conn.execute(
+            """UPDATE recipes SET favorite = CASE
+                   WHEN EXISTS (SELECT 1 FROM favourites WHERE recipe_id = recipes.id)
+                   THEN 1 ELSE 0 END"""
+        )
+
+
+@app.get("/api/recipes")
+def list_recipes(request: Request, q: str = "", tag: str = "", favorite: bool = False,
+                 sort: str = "updated") -> list[dict[str, Any]]:
+    with db() as conn:
+        user_id = resolve_user(conn, requested_user(request))
+        favs = favourite_ids(conn, user_id)
         rows = conn.execute("SELECT * FROM recipes").fetchall()
 
-    recipes = [row_to_recipe(r) for r in rows]
+    recipes = [row_to_recipe(r, favs) for r in rows]
 
     if q:
         needle = q.casefold()
@@ -255,7 +449,12 @@ def list_recipes(q: str = "", tag: str = "", favorite: bool = False, sort: str =
 
 
 @app.post("/api/recipes", status_code=201)
-def create_recipe(payload: RecipeIn) -> dict[str, Any]:
+def create_recipe(payload: RecipeIn, request: Request) -> dict[str, Any]:
+    return store_recipe(payload, requested_user(request))
+
+
+def store_recipe(payload: RecipeIn, raw_user: str = "") -> dict[str, Any]:
+    """Insert a recipe. Shared with the importers, which have no request body."""
     rid = uuid.uuid4().hex
     ts = now_iso()
     with db() as conn:
@@ -280,33 +479,38 @@ def create_recipe(payload: RecipeIn) -> dict[str, Any]:
                 json.dumps([s.model_dump() for s in payload.steps]),
                 payload.notes,
                 payload.source,
-                int(payload.favorite),
+                0,
                 ts,
                 ts,
             ),
         )
+        user_id = resolve_user(conn, raw_user)
+        if payload.favorite:
+            set_favourite(conn, user_id, rid, True)
+        favs = favourite_ids(conn, user_id)
         row = conn.execute("SELECT * FROM recipes WHERE id=?", (rid,)).fetchone()
-    return row_to_recipe(row)
+    return row_to_recipe(row, favs)
 
 
 @app.get("/api/recipes/{recipe_id}")
-def get_recipe(recipe_id: str) -> dict[str, Any]:
+def get_recipe(recipe_id: str, request: Request) -> dict[str, Any]:
     with db() as conn:
+        favs = favourite_ids(conn, resolve_user(conn, requested_user(request)))
         row = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
-    return row_to_recipe(row)
+    return row_to_recipe(row, favs)
 
 
 @app.put("/api/recipes/{recipe_id}")
-def update_recipe(recipe_id: str, payload: RecipeIn) -> dict[str, Any]:
+def update_recipe(recipe_id: str, payload: RecipeIn, request: Request) -> dict[str, Any]:
     with db() as conn:
         if conn.execute("SELECT id FROM recipes WHERE id=?", (recipe_id,)).fetchone() is None:
             raise HTTPException(status_code=404, detail="Recipe not found")
         conn.execute(
             """UPDATE recipes SET title=?, summary=?, category=?, cuisine=?, tags=?,
                    servings=?, prep_minutes=?, cook_minutes=?, difficulty=?, photo_id=?,
-                   ingredients=?, steps=?, notes=?, source=?, favorite=?, updated_at=?
+                   ingredients=?, steps=?, notes=?, source=?, updated_at=?
                WHERE id=?""",
             (
                 payload.title,
@@ -323,13 +527,15 @@ def update_recipe(recipe_id: str, payload: RecipeIn) -> dict[str, Any]:
                 json.dumps([s.model_dump() for s in payload.steps]),
                 payload.notes,
                 payload.source,
-                int(payload.favorite),
                 now_iso(),
                 recipe_id,
             ),
         )
+        user_id = resolve_user(conn, requested_user(request))
+        set_favourite(conn, user_id, recipe_id, payload.favorite)
+        favs = favourite_ids(conn, user_id)
         updated = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
-    return row_to_recipe(updated)
+    return row_to_recipe(updated, favs)
 
 
 @app.delete("/api/recipes/{recipe_id}", status_code=204)
@@ -337,10 +543,30 @@ def delete_recipe(recipe_id: str) -> None:
     with db() as conn:
         if conn.execute("DELETE FROM recipes WHERE id=?", (recipe_id,)).rowcount == 0:
             raise HTTPException(status_code=404, detail="Recipe not found")
+        # Nobody's favourites or wishlist should point at a recipe that is gone.
+        conn.execute("DELETE FROM favourites WHERE recipe_id=?", (recipe_id,))
+        conn.execute("DELETE FROM wishlist WHERE recipe_id=?", (recipe_id,))
+
+
+@app.put("/api/recipes/{recipe_id}/favorite")
+def put_favorite(recipe_id: str, payload: FavouriteIn, request: Request) -> dict[str, Any]:
+    """Favourite or unfavourite a recipe for whoever is asking.
+
+    A dedicated route rather than a whole-recipe PUT, so tapping the heart can
+    never overwrite an edit somebody else is making at the same moment.
+    """
+    with db() as conn:
+        if conn.execute("SELECT id FROM recipes WHERE id=?", (recipe_id,)).fetchone() is None:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        user_id = resolve_user(conn, requested_user(request))
+        set_favourite(conn, user_id, recipe_id, payload.favorite)
+        favs = favourite_ids(conn, user_id)
+        row = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
+    return row_to_recipe(row, favs)
 
 
 @app.post("/api/recipes/{recipe_id}/cooked")
-def mark_cooked(recipe_id: str) -> dict[str, Any]:
+def mark_cooked(recipe_id: str, request: Request) -> dict[str, Any]:
     """Record that the recipe was cooked once more, from the cooking mode."""
     with db() as conn:
         if conn.execute("SELECT id FROM recipes WHERE id=?", (recipe_id,)).fetchone() is None:
@@ -349,8 +575,9 @@ def mark_cooked(recipe_id: str) -> dict[str, Any]:
             "UPDATE recipes SET cooked_count = cooked_count + 1, last_cooked_at=? WHERE id=?",
             (now_iso(), recipe_id),
         )
+        favs = favourite_ids(conn, resolve_user(conn, requested_user(request)))
         updated = conn.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
-    return row_to_recipe(updated)
+    return row_to_recipe(updated, favs)
 
 
 def store_photo(data: bytes, mime: str, source: str, attribution: str, link: str) -> dict[str, Any]:
@@ -870,7 +1097,7 @@ LD_JSON_BLOCK = re.compile(
 
 
 @app.post("/api/import/url", status_code=201)
-async def import_url(payload: PhotoImportIn) -> dict[str, Any]:
+async def import_url(payload: PhotoImportIn, request: Request) -> dict[str, Any]:
     """Import a recipe from a page that publishes schema.org Recipe data.
 
     Most recipe sites embed it as JSON-LD, which is far more dependable than
@@ -926,11 +1153,11 @@ async def import_url(payload: PhotoImportIn) -> dict[str, Any]:
             except (httpx.HTTPError, HTTPException):
                 photo_id = None  # The recipe is still worth importing without it.
 
-    return create_recipe(RecipeIn(photo_id=photo_id, **draft))
+    return store_recipe(RecipeIn(photo_id=photo_id, **draft), requested_user(request))
 
 
 @app.post("/api/import/mealdb/{meal_id}", status_code=201)
-async def import_mealdb(meal_id: str) -> dict[str, Any]:
+async def import_mealdb(meal_id: str, request: Request) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=HTTP_TIMEOUT, follow_redirects=True) as client:
         try:
             resp = await client.get(
@@ -960,7 +1187,7 @@ async def import_mealdb(meal_id: str) -> dict[str, Any]:
             except (httpx.HTTPError, HTTPException):
                 photo_id = None  # The recipe is still worth importing without its photo.
 
-    return create_recipe(RecipeIn(photo_id=photo_id, **draft))
+    return store_recipe(RecipeIn(photo_id=photo_id, **draft), requested_user(request))
 
 
 @app.get("/api/shopping")
@@ -1011,11 +1238,105 @@ def clear_shopping(checked_only: bool = True) -> None:
             conn.execute("DELETE FROM shopping")
 
 
-@app.get("/api/backup")
-def export_backup() -> JSONResponse:
-    """Export every recipe as JSON. Photos stay on the server."""
+def row_to_wish(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": row["id"],
+        "text": row["text"],
+        "note": row["note"],
+        "recipe_id": row["recipe_id"],
+        "recipe_title": row["recipe_title"],
+        "recipe_photo_id": row["recipe_photo_id"],
+        "user_id": row["user_id"],
+        "user_name": row["user_name"] or "Someone",
+        "user_colour": row["user_colour"] or "",
+        "created_at": row["created_at"],
+    }
+
+
+# One join, so a wish always arrives knowing who wrote it and, when it points
+# at a recipe, what that recipe is called right now rather than when it was added.
+WISH_SELECT = """
+    SELECT w.*, u.name AS user_name, u.colour AS user_colour,
+           r.title AS recipe_title, r.photo_id AS recipe_photo_id
+      FROM wishlist w
+      LEFT JOIN users u ON u.id = w.user_id
+      LEFT JOIN recipes r ON r.id = w.recipe_id
+"""
+
+
+@app.get("/api/wishlist")
+def list_wishlist() -> list[dict[str, Any]]:
+    """Everyone's wishes, newest first. Deliberately not filtered by person:
+    the whole point is seeing what the others put up there."""
     with db() as conn:
-        recipes = [row_to_recipe(r) for r in conn.execute("SELECT * FROM recipes").fetchall()]
+        # rowid breaks the tie when several wishes land inside the same second.
+        rows = conn.execute(WISH_SELECT + " ORDER BY w.created_at DESC, w.rowid DESC").fetchall()
+    return [row_to_wish(r) for r in rows]
+
+
+@app.post("/api/wishlist", status_code=201)
+def add_wish(payload: WishIn, request: Request) -> dict[str, Any]:
+    text = payload.text.strip()
+    with db() as conn:
+        user_id = resolve_user(conn, requested_user(request))
+
+        recipe_id = None
+        if payload.recipe_id:
+            recipe = conn.execute(
+                "SELECT id, title FROM recipes WHERE id=?", (payload.recipe_id,)
+            ).fetchone()
+            if recipe is None:
+                raise HTTPException(status_code=404, detail="Recipe not found")
+            recipe_id = recipe["id"]
+            if not text:
+                text = recipe["title"]
+            # Adding the same recipe twice from its page is a slip, not a wish.
+            existing = conn.execute(
+                "SELECT id FROM wishlist WHERE user_id=? AND recipe_id=?", (user_id, recipe_id)
+            ).fetchone()
+            if existing is not None:
+                row = conn.execute(WISH_SELECT + " WHERE w.id=?", (existing["id"],)).fetchone()
+                return row_to_wish(row)
+
+        if not text:
+            raise HTTPException(status_code=400, detail="Write what you fancy")
+
+        wid = uuid.uuid4().hex
+        conn.execute(
+            "INSERT INTO wishlist (id, text, note, recipe_id, user_id, created_at) VALUES (?,?,?,?,?,?)",
+            (wid, text, payload.note.strip(), recipe_id, user_id, now_iso()),
+        )
+        row = conn.execute(WISH_SELECT + " WHERE w.id=?", (wid,)).fetchone()
+    return row_to_wish(row)
+
+
+@app.delete("/api/wishlist/{wish_id}", status_code=204)
+def delete_wish(wish_id: str) -> None:
+    with db() as conn:
+        conn.execute("DELETE FROM wishlist WHERE id=?", (wish_id,))
+
+
+@app.delete("/api/wishlist", status_code=204)
+def clear_wishlist(request: Request, mine_only: bool = False) -> None:
+    """Wipe the board. It is meant to be refilled tomorrow."""
+    with db() as conn:
+        if mine_only:
+            conn.execute("DELETE FROM wishlist WHERE user_id=?",
+                         (resolve_user(conn, requested_user(request)),))
+        else:
+            conn.execute("DELETE FROM wishlist")
+
+
+@app.get("/api/backup")
+def export_backup(request: Request) -> JSONResponse:
+    """Export every recipe as JSON. Photos stay on the server.
+
+    Recipes are shared, so the file holds all of them; the ``favorite`` flag in
+    it is the one belonging to whoever asked for the export.
+    """
+    with db() as conn:
+        favs = favourite_ids(conn, resolve_user(conn, requested_user(request)))
+        recipes = [row_to_recipe(r, favs) for r in conn.execute("SELECT * FROM recipes").fetchall()]
     payload = {"service": SERVICE_NAME, "version": 1, "exported_at": now_iso(), "recipes": recipes}
     filename = "mordorcook-backup-%s.json" % datetime.now().strftime("%Y-%m-%d")
     return JSONResponse(payload, headers={"Content-Disposition": 'attachment; filename="%s"' % filename})
@@ -1040,7 +1361,7 @@ async def import_backup(request: Request) -> dict[str, int]:
             model = RecipeIn(**{k: v for k, v in raw.items() if k in RecipeIn.model_fields})
         except Exception:
             continue
-        create_recipe(model)
+        store_recipe(model, requested_user(request))
         imported += 1
     return {"imported": imported}
 
@@ -1054,11 +1375,15 @@ def stats() -> dict[str, Any]:
         photos = conn.execute(
             "SELECT COUNT(*) AS c, COALESCE(SUM(bytes), 0) AS b FROM photos"
         ).fetchone()
+        people = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
+        wishes = conn.execute("SELECT COUNT(*) AS c FROM wishlist").fetchone()["c"]
     return {
         "recipes": recipes["c"],
         "cooked_total": recipes["n"],
         "photos": photos["c"],
         "photo_bytes": photos["b"],
+        "people": people,
+        "wishlist": wishes,
     }
 
 

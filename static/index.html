@@ -89,6 +89,15 @@
   --safe-r: env(safe-area-inset-right, 0px);
   --topbar-h: 52px;
   --tabbar-h: 56px;
+
+  /* One swatch per person. Deep enough here to carry white initials. */
+  --u-sage:  #5D7052;
+  --u-clay:  #A8663A;
+  --u-plum:  #7D5270;
+  --u-sky:   #4C7188;
+  --u-amber: #856A22;
+  --u-rose:  #A85149;
+  --u-fg:    #FFFFFF;
 }
 
 
@@ -130,6 +139,15 @@
     
     --shadow-card:     0 4px 20px -2px rgba(0, 0, 0, 0.5);
     --shadow-raised:   0 10px 40px -10px rgba(0, 0, 0, 0.6);
+
+    /* Light swatches on a dark ground, so the initials go dark instead. */
+    --u-sage:  #A8BE99;
+    --u-clay:  #DDA97C;
+    --u-plum:  #C79FBB;
+    --u-sky:   #92B6CC;
+    --u-amber: #DCC07E;
+    --u-rose:  #E09A92;
+    --u-fg:    #1A1A18;
   }
 }
 :root[data-appearance="dark"] {
@@ -165,6 +183,15 @@
     
     --shadow-card:     0 4px 20px -2px rgba(0, 0, 0, 0.5);
     --shadow-raised:   0 10px 40px -10px rgba(0, 0, 0, 0.6);
+
+    /* Light swatches on a dark ground, so the initials go dark instead. */
+    --u-sage:  #A8BE99;
+    --u-clay:  #DDA97C;
+    --u-plum:  #C79FBB;
+    --u-sky:   #92B6CC;
+    --u-amber: #DCC07E;
+    --u-rose:  #E09A92;
+    --u-fg:    #1A1A18;
 }
 
 
@@ -340,11 +367,16 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 10px 40px -10px rgba(193, 140, 93, 0.15);
 }
 .tab {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; min-height: var(--tap); padding: var(--sp-1) var(--sp-2);
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; min-height: var(--tap); padding: var(--sp-1);
   color: var(--label-secondary); font-size: 11px; line-height: 1.1; font-weight: 600;
   transition: all var(--dur) var(--ease); border-radius: var(--r-full);
 }
+/* Five tabs on a narrow phone: the label keeps to one line and trims rather
+   than breaking mid-word. */
+.tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 380px) { .tab { font-size: 10px; } }
 .tab .icon { width: 1.6em; height: 1.6em; margin-bottom: 2px; }
 .tab[aria-current="page"] { color: var(--tint); background: var(--tint-soft); }
 .tab[aria-current="page"] .icon { stroke-width: 2.2; }
@@ -620,6 +652,60 @@ textarea.field { min-height: 8rem; resize: vertical; line-height: 1.5; border-ra
   color: var(--label-quaternary);
 }
 .placeholder .icon { width: 2.5rem; height: 2.5rem; stroke-width: 1.2; }
+
+/* -------------------------------------------------------------- people -- */
+.avatar {
+  display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--u-bg, var(--tint)); color: var(--u-fg);
+  font-size: 0.8125rem; font-weight: 700; line-height: 1;
+  text-transform: uppercase; -webkit-user-select: none; user-select: none;
+}
+.avatar--lg { width: 44px; height: 44px; font-size: 1rem; }
+.avatar--sm { width: 24px; height: 24px; font-size: 0.625rem; }
+.avatar[data-colour="sage"]  { --u-bg: var(--u-sage); }
+.avatar[data-colour="clay"]  { --u-bg: var(--u-clay); }
+.avatar[data-colour="plum"]  { --u-bg: var(--u-plum); }
+.avatar[data-colour="sky"]   { --u-bg: var(--u-sky); }
+.avatar[data-colour="amber"] { --u-bg: var(--u-amber); }
+.avatar[data-colour="rose"]  { --u-bg: var(--u-rose); }
+
+/* The switchable half of a person's row, so the pencil beside it stays its
+   own button rather than a button inside a button. */
+.person {
+  display: flex; align-items: center; gap: var(--sp-3);
+  flex: 1; min-width: 0; text-align: left; padding: var(--sp-1) 0;
+  background: none; border: 0; color: inherit; font: inherit; cursor: pointer;
+}
+.person__check { color: var(--tint); flex: 0 0 auto; }
+.person:hover .row__title { color: var(--tint); }
+
+.swatches { display: flex; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-2) 0; }
+.swatch {
+  width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
+  background: var(--u-bg, var(--tint)); border: 2px solid transparent;
+  box-shadow: 0 0 0 2px var(--bg-card) inset; cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.swatch[data-colour="sage"]  { --u-bg: var(--u-sage); }
+.swatch[data-colour="clay"]  { --u-bg: var(--u-clay); }
+.swatch[data-colour="plum"]  { --u-bg: var(--u-plum); }
+.swatch[data-colour="sky"]   { --u-bg: var(--u-sky); }
+.swatch[data-colour="amber"] { --u-bg: var(--u-amber); }
+.swatch[data-colour="rose"]  { --u-bg: var(--u-rose); }
+.swatch[aria-pressed="true"] { border-color: var(--label); transform: scale(1.06); }
+
+/* ------------------------------------------------------------ wishlist -- */
+.wish__body { flex: 1; min-width: 0; }
+.wish__title { display: block; font-size: var(--t-body); line-height: var(--lh-body); }
+a.wish__title { color: var(--label); text-decoration: none; }
+a.wish__title:hover { color: var(--tint); }
+.wish__meta {
+  display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap;
+  font-size: var(--t-footnote); line-height: var(--lh-footnote); color: var(--label-secondary);
+}
+.wish__thumb { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; flex: 0 0 auto; }
+.wish--mine { background: var(--tint-soft); }
 
 .empty { text-align: center; padding: var(--sp-8) var(--sp-4); display: flex;
          flex-direction: column; align-items: center; gap: var(--sp-3); }
@@ -931,6 +1017,8 @@ textarea.field { min-height: 8rem; resize: vertical; line-height: 1.5; border-ra
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></symbol>
 <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2.5s5.5 4.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-1.7.7-3.2 1.6-4.4.3 1.4 1.3 2.3 2.3 2.3 1.5 0 2-1.6 1.6-7.5Z"/></symbol>
 <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M17 11.2a3.2 3.2 0 0 0 0-6.2M18 20h3.5a5.6 5.6 0 0 0-3.2-5"/></symbol>
+<symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.6 2.6 5.4 5.9.8-4.3 4.1 1.1 5.9-5.3-2.9-5.3 2.9 1.1-5.9L3.5 9.8l5.9-.8Z"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8a1 1 0 0 0 .84-.46l.92-1.42A1 1 0 0 1 9.9 3.6h4.2a1 1 0 0 1 .84.52l.92 1.42a1 1 0 0 0 .84.46h1.8A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5Z"/><circle cx="12" cy="13" r="3.6"/></symbol>
 <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.6"/><circle cx="8.5" cy="10" r="1.7"/><path d="m3.6 17.4 4.6-4.3a2 2 0 0 1 2.7 0l3.2 3M14 14.6l1.6-1.4a2 2 0 0 1 2.7.06l2.1 2"/></symbol>
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7M6.5 6.5l.9 12.2a2 2 0 0 0 2 1.8h5.2a2 2 0 0 0 2-1.8l.9-12.2M10 10.5v6M14 10.5v6"/></symbol>
@@ -1036,6 +1124,8 @@ const BASE = location.pathname.replace(/[^/]*$/, "") || "/";
 
 async function api(path, options) {
   const opts = Object.assign({ headers: {} }, options);
+  // Recipes are shared, favourites are not, so every call says who is asking.
+  if (state.userId) opts.headers["X-User-Id"] = state.userId;
   if (opts.body !== undefined && !(opts.body instanceof FormData)) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(opts.body);
@@ -1102,6 +1192,19 @@ function formatDate(iso) {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
+// Wishlist entries are hours old, not months, so the clock says more than a date.
+function formatWhen(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return "today " + time;
+  const yesterday = new Date(today.getTime() - 86400000);
+  if (d.toDateString() === yesterday.toDateString()) return "yesterday " + time;
+  return formatDate(iso);
+}
+
 function formatBytes(n) {
   if (!n) return "0 kB";
   if (n < 1024 * 1024) return Math.round(n / 1024) + " kB";
@@ -1120,6 +1223,7 @@ const plural = function (n, one, many) { return n + " " + (n === 1 ? one : many)
 "use strict";
 
 const PREF_KEY = "mordorcook.prefs";
+const USER_KEY = "mordorcook.user";
 const TIMER_KEY = "mordorcook.timers";
 const CHECKED_KEY = "mordorcook.checked";
 const COOKING_KEY = "mordorcook.cooking";
@@ -1171,6 +1275,11 @@ function applyPrefs() {
 const state = {
   recipes: [],
   shopping: [],
+  wishlist: [],
+  users: [],
+  // Which of the household this browser is. Everything else about a person
+  // lives on the server; only the choice of person is per-device.
+  userId: readStore(USER_KEY, "") || "",
   loaded: false,
   filters: { q: "", tag: "", favorite: false, sort: "updated" },
   checked: readStore(CHECKED_KEY, {}),   // recipe id -> ticked ingredient indexes
@@ -1189,6 +1298,57 @@ async function refreshRecipes() {
 
 async function refreshShopping() {
   state.shopping = await api("api/shopping");
+}
+
+async function refreshWishlist() {
+  state.wishlist = await api("api/wishlist");
+}
+
+async function refreshUsers() {
+  state.users = await api("api/users");
+  // A person removed on another device, or a fresh browser: fall in behind
+  // whoever comes first rather than sending an id the server will not know.
+  const known = state.users.some(function (u) { return u.id === state.userId; });
+  if (!known) setCurrentUser(state.users.length ? state.users[0].id : "");
+}
+
+function setCurrentUser(id) {
+  state.userId = id || "";
+  writeStore(USER_KEY, state.userId);
+}
+
+function currentUser() {
+  return state.users.filter(function (u) { return u.id === state.userId; })[0] || state.users[0] || null;
+}
+
+function initials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2);
+  return parts[0].charAt(0) + parts[1].charAt(0);
+}
+
+// `who` is either a user from state.users or the author fields carried on a
+// wishlist entry, which is why the shape is read loosely.
+function avatar(who, cls) {
+  return el("span", {
+    class: "avatar" + (cls ? " " + cls : ""),
+    dataset: { colour: (who && (who.colour || who.user_colour)) || "sage" },
+    "aria-hidden": "true",
+    text: initials(who && (who.name || who.user_name))
+  });
+}
+
+async function switchUser(id) {
+  if (!id || id === state.userId) return;
+  setCurrentUser(id);
+  // Favourites belong to the person, so the library has to be asked again.
+  state.loaded = false;
+  try { await refreshRecipes(); } catch (err) { reportError(err); }
+  const who = currentUser();
+  haptic();
+  if (who) toast("Cooking as " + who.name, "ok");
+  render();
 }
 
 function allTags() {
@@ -1360,6 +1520,7 @@ document.addEventListener("focusin", function (event) {
 
 const TABS = [
   { id: "library",  route: "#/recipes",  label: "Recipes",  icon: "book" },
+  { id: "wishlist", route: "#/wishlist", label: "Wishlist", icon: "star" },
   { id: "shopping", route: "#/shopping", label: "Shopping", icon: "cart" },
   { id: "timers",   route: "#/timers",   label: "Timers",   icon: "timer" },
   { id: "settings", route: "#/settings", label: "Settings", icon: "gear" }
@@ -1425,6 +1586,7 @@ function parseRoute() {
   if (head === "new") return { name: "editor", params: { id: null } };
   if (head === "edit" && parts[1]) return { name: "editor", params: { id: parts[1] } };
   if (head === "cook" && parts[1]) return { name: "cook", params: { id: parts[1] } };
+  if (head === "wishlist") return { name: "wishlist", params: {} };
   if (head === "shopping") return { name: "shopping", params: {} };
   if (head === "timers") return { name: "timers", params: {} };
   if (head === "settings") return { name: "settings", params: {} };
@@ -1999,9 +2161,13 @@ function recipePayload(recipe) {
   };
 }
 
+/* Its own endpoint rather than a whole-recipe save: a heart is personal, and
+   sending the entire recipe back would also republish whatever happened to be
+   in this browser's copy of it. */
 async function toggleFavorite(recipe) {
-  const next = Object.assign({}, recipe, { favorite: !recipe.favorite });
-  const saved = await api("api/recipes/" + recipe.id, { method: "PUT", body: recipePayload(next) });
+  const saved = await api("api/recipes/" + recipe.id + "/favorite", {
+    method: "PUT", body: { favorite: !recipe.favorite }
+  });
   Object.assign(recipe, saved);
   return saved;
 }
@@ -2046,10 +2212,44 @@ VIEWS.recipe = async function (main, params) {
     }
   }, icon("heart", recipe.favorite ? "icon--filled" : null));
 
+  // Whether this recipe is already on the board under this person's name. The
+  // board is small and shared, so it is cheap to ask and worth showing.
+  let myWish = null;
+  try {
+    await refreshWishlist();
+    myWish = state.wishlist.filter(function (w) {
+      return w.recipe_id === recipe.id && w.user_id === state.userId;
+    })[0] || null;
+  } catch (err) { /* offline: the heart and the recipe still work */ }
+
+  const wishButton = el("button", {
+    class: "iconbtn", type: "button", "aria-pressed": String(!!myWish),
+    "aria-label": myWish ? "Take off the wishlist" : "Add to the wishlist",
+    onclick: async function () {
+      try {
+        if (myWish) {
+          await api("api/wishlist/" + myWish.id, { method: "DELETE" });
+          myWish = null;
+          await refreshWishlist();
+          toast("Taken off the wishlist", "ok");
+        } else {
+          myWish = await addWish({ recipe_id: recipe.id });
+          toast("On the wishlist for everyone to see", "ok");
+        }
+        setContent(wishButton, icon("star", myWish ? "icon--filled" : null));
+        wishButton.setAttribute("aria-pressed", String(!!myWish));
+        wishButton.setAttribute("aria-label",
+          myWish ? "Take off the wishlist" : "Add to the wishlist");
+        haptic();
+      } catch (err) { reportError(err); }
+    }
+  }, icon("star", myWish ? "icon--filled" : null));
+
   setTopbar({
     title: recipe.title,
     leading: backButton("#/recipes", "Back to recipes"),
     trailing: [
+      wishButton,
       favButton,
       el("a", { class: "iconbtn", href: "#/edit/" + recipe.id, "aria-label": "Edit recipe" }, icon("pencil"))
     ]
@@ -3379,6 +3579,203 @@ VIEWS.timers = async function (main) {
 </script>
 <script>
 /* ==========================================================================
+   Wishlist
+   A shared board for "what shall we cook?". Everyone writes on the same one
+   and every line says who wrote it, so the answer arrives without anyone
+   having to be in the same room. It is meant to be wiped and refilled, which
+   is why emptying it is a first-class button rather than a chore.
+   ========================================================================== */
+"use strict";
+
+async function addWish(body) {
+  const made = await api("api/wishlist", { method: "POST", body: body });
+  await refreshWishlist();
+  return made;
+}
+
+/* Adding a recipe already in the library, rather than typing its name again. */
+function openWishRecipeSheet(onAdded) {
+  const field = el("input", {
+    class: "field", type: "search", placeholder: "Search the library",
+    "aria-label": "Search the library", enterkeyhint: "search"
+  });
+  const host = el("div");
+
+  function paint() {
+    const needle = field.value.trim().toLowerCase();
+    const list = state.recipes.filter(function (r) {
+      return !needle || r.title.toLowerCase().indexOf(needle) >= 0;
+    }).slice(0, 40);
+
+    if (!list.length) {
+      setContent(host, el("p", { class: "t-footnote secondary", style: "padding:16px 4px",
+                                 text: "Nothing in the library matches that." }));
+      return;
+    }
+    setContent(host, el("div", { class: "list" }, list.map(function (recipe) {
+      return el("button", {
+        class: "row", type: "button",
+        onclick: async function () {
+          try {
+            await addWish({ recipe_id: recipe.id });
+            closeSheet();
+            toast(recipe.title + " is on the wishlist", "ok");
+            onAdded();
+          } catch (err) { reportError(err); }
+        }
+      }, [
+        recipe.photo_id
+          ? el("img", { class: "wish__thumb", src: photoUrl(recipe.photo_id), alt: "", loading: "lazy" })
+          : null,
+        el("span", { class: "row__text" }, el("span", { class: "row__title", text: recipe.title })),
+        icon("plus", "row__chevron")
+      ]);
+    })));
+  }
+
+  field.addEventListener("input", paint);
+  openSheet({
+    title: "Add a recipe",
+    body: el("div", { class: "stack" }, [field, host])
+  });
+  paint();
+}
+
+function wishRow(item, repaint) {
+  const mine = item.user_id === state.userId;
+  const title = item.recipe_id
+    ? el("a", { class: "wish__title", href: "#/recipe/" + item.recipe_id,
+                text: item.recipe_title || item.text })
+    : el("span", { class: "wish__title", text: item.text });
+
+  return el("div", { class: "row" + (mine ? " wish--mine" : "") }, [
+    avatar(item),
+    el("div", { class: "wish__body" }, [
+      title,
+      item.note ? el("span", { class: "row__sub", text: item.note }) : null,
+      el("span", { class: "wish__meta" }, [
+        el("span", { text: mine ? "you" : item.user_name }),
+        el("span", { "aria-hidden": "true", text: "·" }),
+        el("span", { text: formatWhen(item.created_at) })
+      ])
+    ]),
+    item.recipe_photo_id
+      ? el("img", { class: "wish__thumb", src: photoUrl(item.recipe_photo_id), alt: "", loading: "lazy" })
+      : null,
+    el("button", {
+      class: "iconbtn", type: "button",
+      "aria-label": "Take " + (item.recipe_title || item.text) + " off the wishlist",
+      onclick: async function () {
+        try {
+          await api("api/wishlist/" + item.id, { method: "DELETE" });
+          await refreshWishlist();
+          repaint();
+          haptic();
+        } catch (err) { reportError(err); }
+      }
+    }, icon("x"))
+  ]);
+}
+
+VIEWS.wishlist = async function (main) {
+  setTopbar({ title: "Wishlist" });
+
+  if (!state.loaded) {
+    setContent(main, el("div", { class: "wrap" }, loadingView()));
+    await refreshRecipes();
+  }
+  await refreshWishlist();
+
+  const field = el("input", {
+    class: "field", placeholder: "What do you fancy?",
+    "aria-label": "What do you fancy?", enterkeyhint: "done", maxlength: "200"
+  });
+  const listHost = el("div");
+
+  async function add() {
+    const text = field.value.trim();
+    if (!text) return;
+    field.value = "";
+    try {
+      await addWish({ text: text });
+      paint();
+      field.focus();
+    } catch (err) { reportError(err); }
+  }
+
+  field.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") { event.preventDefault(); add(); }
+  });
+
+  function paint() {
+    const items = state.wishlist;
+    if (!items.length) {
+      setContent(listHost, el("div", { class: "empty" }, [
+        icon("star"),
+        el("p", { class: "empty__title", text: "Nothing on the board" }),
+        el("p", { class: "empty__body",
+                  text: "Write what you fancy, or add a recipe from the library. " +
+                        "Everyone in the house sees the same board, and each line " +
+                        "says who put it there." })
+      ]));
+      return;
+    }
+
+    const mine = items.filter(function (i) { return i.user_id === state.userId; }).length;
+    setContent(listHost, [
+      el("p", { class: "t-footnote secondary", style: "margin-bottom:8px",
+                text: plural(items.length, "idea", "ideas") +
+                      (mine ? " · " + mine + " from you" : "") }),
+      el("div", { class: "list" }, items.map(function (item) { return wishRow(item, paint); })),
+      el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-top:16px" }, [
+        mine ? el("button", { class: "btn btn--gray", type: "button", onclick: async function () {
+          try {
+            await api("api/wishlist?mine_only=true", { method: "DELETE" });
+            await refreshWishlist();
+            paint();
+            toast("Your ideas are off the board", "ok");
+          } catch (err) { reportError(err); }
+        } }, [icon("person"), "Clear mine"]) : null,
+        el("button", { class: "btn btn--danger", type: "button", onclick: async function () {
+          const ok = await confirmAction({
+            title: "Clear the whole board?",
+            message: "Every idea on the wishlist goes, including the ones other " +
+                     "people added. The recipes themselves are not touched.",
+            confirmLabel: "Clear everything", destructive: true
+          });
+          if (!ok) return;
+          try {
+            await api("api/wishlist", { method: "DELETE" });
+            await refreshWishlist();
+            paint();
+            toast("Board cleared", "ok");
+          } catch (err) { reportError(err); }
+        } }, [icon("trash"), "Clear everything"])
+      ])
+    ]);
+  }
+
+  const who = currentUser();
+  setContent(main, el("div", { class: "wrap" }, [
+    el("h2", { class: "largetitle", text: "Wishlist" }),
+    el("p", { class: "t-footnote secondary", style: "margin-bottom:16px" },
+      who ? ["Adding as ", el("strong", { text: who.name }), ". Everyone shares this board."]
+          : "Everyone shares this board."),
+    el("div", { style: "display:flex;gap:8px;margin-bottom:12px" }, [
+      field,
+      el("button", { class: "btn btn--filled", type: "button", onclick: add, "aria-label": "Add idea" },
+        icon("plus"))
+    ]),
+    el("button", { class: "btn btn--tinted", type: "button", style: "margin-bottom:20px",
+                   onclick: function () { openWishRecipeSheet(paint); } },
+      [icon("book"), "Add a recipe from the library"]),
+    listHost
+  ]));
+  paint();
+};
+</script>
+<script>
+/* ==========================================================================
    Shopping list
    ========================================================================== */
 "use strict";
@@ -3545,6 +3942,158 @@ function textSizeControl() {
 <script>
 "use strict";
 
+const COLOURS = ["sage", "clay", "plum", "sky", "amber", "rose"];
+
+function colourPicker(selected, onPick) {
+  let value = selected;
+  const host = el("div", { class: "swatches", role: "group", "aria-label": "Colour" },
+    COLOURS.map(function (name) {
+      return el("button", {
+        class: "swatch", type: "button", dataset: { colour: name },
+        "aria-label": name, "aria-pressed": String(value === name),
+        onclick: function (event) {
+          value = name;
+          onPick(name);
+          Array.prototype.forEach.call(event.currentTarget.parentNode.children, function (b) {
+            b.setAttribute("aria-pressed", String(b.dataset.colour === name));
+          });
+        }
+      });
+    }));
+  return host;
+}
+
+function openAddPersonSheet(onDone) {
+  let colour = COLOURS[state.users.length % COLOURS.length];
+  const field = el("input", { class: "field", placeholder: "Name", "aria-label": "Name",
+                              maxlength: "40", enterkeyhint: "done" });
+
+  async function save() {
+    const name = field.value.trim();
+    if (!name) { field.focus(); return; }
+    try {
+      const made = await api("api/users", { method: "POST", body: { name: name, colour: colour } });
+      await refreshUsers();
+      closeSheet();
+      toast(made.name + " can now keep their own favourites", "ok");
+      onDone();
+    } catch (err) { reportError(err); }
+  }
+
+  field.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") { event.preventDefault(); save(); }
+  });
+
+  openSheet({
+    title: "Add someone",
+    body: el("div", { class: "stack" }, [
+      field,
+      colourPicker(colour, function (next) { colour = next; }),
+      el("p", { class: "t-footnote secondary",
+                text: "They see the same recipes, shopping list and wishlist. " +
+                      "Their favourites are their own." })
+    ]),
+    footer: el("button", { class: "btn btn--filled btn--block", type: "button",
+                           text: "Add", onclick: save })
+  });
+}
+
+function openEditPersonSheet(user, onDone) {
+  let colour = user.colour || COLOURS[0];
+  const field = el("input", { class: "field", value: user.name, "aria-label": "Name",
+                              maxlength: "40", enterkeyhint: "done" });
+
+  async function save() {
+    const name = field.value.trim();
+    if (!name) { field.focus(); return; }
+    try {
+      await api("api/users/" + user.id, { method: "PATCH", body: { name: name, colour: colour } });
+      await refreshUsers();
+      closeSheet();
+      onDone();
+    } catch (err) { reportError(err); }
+  }
+
+  field.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") { event.preventDefault(); save(); }
+  });
+
+  const last = state.users.length < 2;
+  openSheet({
+    title: "Edit person",
+    body: el("div", { class: "stack" }, [
+      field,
+      colourPicker(colour, function (next) { colour = next; }),
+      el("button", {
+        class: "btn btn--danger btn--block", type: "button", disabled: last ? true : null,
+        onclick: async function () {
+          closeSheet();
+          const ok = await confirmAction({
+            title: "Remove " + user.name + "?",
+            message: "Their favourites and the ideas they put on the wishlist go with " +
+                     "them. The recipes stay, because those belong to everyone.",
+            confirmLabel: "Remove " + user.name, destructive: true
+          });
+          if (!ok) return;
+          try {
+            await api("api/users/" + user.id, { method: "DELETE" });
+            const wasMe = user.id === state.userId;
+            await refreshUsers();
+            if (wasMe) { state.loaded = false; await refreshRecipes(); }
+            onDone();
+          } catch (err) { reportError(err); }
+        }
+      }, [icon("trash"), last ? "The only person here" : "Remove this person"])
+    ]),
+    footer: el("button", { class: "btn btn--filled btn--block", type: "button",
+                           text: "Save", onclick: save })
+  });
+}
+
+function peopleSection() {
+  const host = el("div", { class: "list" },
+    state.users.map(function (user) {
+      const active = user.id === state.userId;
+      return el("div", { class: "row" }, [
+        el("button", {
+          class: "person", type: "button", "aria-pressed": String(active),
+          onclick: function () { switchUser(user.id); }
+        }, [
+          avatar(user, "avatar--lg"),
+          el("span", { class: "row__text" }, [
+            el("span", { class: "row__title", text: user.name }),
+            el("span", { class: "row__sub",
+                         text: active ? "Cooking as this person on this device"
+                                      : "Switch to " + user.name })
+          ]),
+          active ? icon("check", "person__check") : null
+        ]),
+        el("button", {
+          class: "iconbtn", type: "button", "aria-label": "Edit " + user.name,
+          onclick: function () { openEditPersonSheet(user, render); }
+        }, icon("pencil"))
+      ]);
+    }).concat([
+      el("button", {
+        class: "row", type: "button",
+        onclick: function () { openAddPersonSheet(render); }
+      }, [
+        el("span", { class: "row__text" },
+          el("span", { class: "row__title", text: "Add someone" })),
+        icon("plus", "row__chevron")
+      ])
+    ]));
+
+  return el("section", { class: "group" }, [
+    el("div", { class: "group__header", text: "Who is cooking" }),
+    host,
+    el("p", { class: "group__footer",
+              text: "Everyone shares the recipes, the shopping list and the wishlist. " +
+                    "Favourites are private to each person, and this device remembers " +
+                    "which one you are." })
+  ]);
+}
+
 async function restoreBackup(file) {
   const text = await file.text();
   let payload;
@@ -3590,6 +4139,8 @@ VIEWS.settings = async function (main) {
 
   setContent(main, el("div", { class: "wrap" }, [
     el("h2", { class: "largetitle", text: "Settings" }),
+
+    peopleSection(),
 
     el("section", { class: "group" }, [
       el("div", { class: "group__header", text: "Appearance" }),
@@ -3659,13 +4210,18 @@ VIEWS.settings = async function (main) {
         el("div", { class: "stat" }, [el("p", { class: "stat__n", text: String(stats.photos) }),
                                       el("p", { class: "stat__l", text: "photos" })]),
         el("div", { class: "stat" }, [el("p", { class: "stat__n", text: formatBytes(stats.photo_bytes) }),
-                                      el("p", { class: "stat__l", text: "on disk" })])
+                                      el("p", { class: "stat__l", text: "on disk" })]),
+        el("div", { class: "stat" }, [el("p", { class: "stat__n", text: String(stats.people) }),
+                                      el("p", { class: "stat__l", text: "people" })]),
+        el("div", { class: "stat" }, [el("p", { class: "stat__n", text: String(stats.wishlist) }),
+                                      el("p", { class: "stat__l", text: "on the wishlist" })])
       ])
     ]) : null,
 
     el("p", { class: "t-footnote secondary", style: "text-align:center;padding:8px 0 32px" },
-      "Recipes, photos and the shopping list are stored on the server, so every device sees " +
-      "the same library. Appearance, text size and running timers stay on this device.")
+      "Recipes, photos, the shopping list and the wishlist are stored on the server, so every " +
+      "device sees the same library. Favourites are kept per person. Appearance, text size " +
+      "and running timers stay on this device.")
   ]));
 };
 </script>
@@ -3716,7 +4272,13 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
     });
 }
 
-render().catch(reportError);
+/* Who this browser is has to be settled before the first view asks the server
+   for anything, or the answer would come back for the wrong person. */
+(async function start() {
+  try { await refreshUsers(); }
+  catch (err) { /* offline: fall back to the person this device last chose */ }
+  render().catch(reportError);
+}());
 </script>
 
 </body>

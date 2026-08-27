@@ -6,7 +6,7 @@
  */
 "use strict";
 
-const VERSION = "mordorcook-v2-organic";
+const VERSION = "mordorcook-v3-people";
 const SHELL = VERSION + "-shell";
 const DATA = VERSION + "-data";
 const PHOTOS = VERSION + "-photos";
@@ -31,6 +31,18 @@ self.addEventListener("activate", function (event) {
     }).then(function () { return self.clients.claim(); })
   );
 });
+
+/* The same address answers differently for each person, because favourites
+   are theirs alone, and the difference travels in a header the cache does not
+   look at. Folding it into the key keeps one person's library from being
+   served to another while offline. The server never sees this address. */
+function dataKey(request) {
+  const who = request.headers.get("X-User-Id");
+  if (!who) return request;
+  const url = new URL(request.url);
+  url.searchParams.set("__as", who);
+  return new Request(url.toString(), { method: "GET" });
+}
 
 self.addEventListener("fetch", function (event) {
   const request = event.request;
@@ -70,15 +82,16 @@ self.addEventListener("fetch", function (event) {
 
   // Recipe reads: fresh when possible, last known copy when not.
   if (url.pathname.indexOf("/api/") !== -1) {
+    const key = dataKey(request);
     event.respondWith(
       fetch(request).then(function (response) {
         if (response.ok) {
           const copy = response.clone();
-          caches.open(DATA).then(function (cache) { cache.put(request, copy); });
+          caches.open(DATA).then(function (cache) { cache.put(key, copy); });
         }
         return response;
       }).catch(function () {
-        return caches.match(request).then(function (hit) {
+        return caches.match(key).then(function (hit) {
           return hit || Response.json(
             { detail: "You are offline and this has not been loaded before." },
             { status: 503 }
